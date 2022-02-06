@@ -7,16 +7,24 @@ import {
 } from '@codemirror/view';
 import { RangeSetBuilder } from '@codemirror/rangeset';
 import { debounce, Debouncer } from 'obsidian';
-import { findAll } from 'highlight-words-core';
+import { findAll, Chunk } from 'highlight-words-core';
 
 const SuggestionCandidateClass = 'cm-suggestion-candidate';
-const SuggestionCandidateHighlightClass = `${SuggestionCandidateClass}--highlight`;
 
-const squigglyUnderline = Decoration.mark({
-  class: SuggestionCandidateClass,
-});
+const squigglyUnderline = (chunk: Chunk) =>
+  Decoration.mark({
+    class: SuggestionCandidateClass,
+    attributes: {
+      'data-position-start': `${chunk.start}`,
+      'data-position-end': `${chunk.end}`,
+    },
+  });
 
-export const matchHighlighter = (searchWords: string[]) => {
+export type SearchWords = {
+  [key: string]: 'tag' | 'link';
+};
+
+export const matchHighlighter = (searchWords: SearchWords) => {
   return ViewPlugin.fromClass(
     class {
       decorations: DecorationSet;
@@ -28,8 +36,7 @@ export const matchHighlighter = (searchWords: string[]) => {
       }
 
       public update(update: ViewUpdate): void {
-        if (update.selectionSet || update.docChanged || update.viewportChanged) {
-          this.decorations = Decoration.none;
+        if (update.docChanged) {
           this.delayedDecorateView(update.view);
         }
       }
@@ -40,7 +47,7 @@ export const matchHighlighter = (searchWords: string[]) => {
             this.decorations = this.decorateView(view);
             view.update([]); // force a view update so that the decorations we just set get applied
           },
-          0,
+          1000,
           true
         );
       }
@@ -48,13 +55,16 @@ export const matchHighlighter = (searchWords: string[]) => {
       decorateView(view: EditorView): DecorationSet {
         const builder = new RangeSetBuilder<Decoration>();
 
-        for (const part of view.visibleRanges) {
-          const textToHighlight = view.state.doc.slice(part.from, part.to).toJSON().join('\n');
-          const chunks = findAll({ searchWords, textToHighlight });
+        console.log('view.state.doc', view.state.doc.toJSON());
 
-          for (const chunk of chunks.filter((chunk) => chunk.highlight)) {
-            builder.add(chunk.start, chunk.end, squigglyUnderline);
-          }
+        const textToHighlight = view.state.doc.slice(0).toJSON().join('\n');
+
+        const chunks = findAll({ searchWords: Object.keys(searchWords), textToHighlight })
+          .filter((chunk) => chunk.highlight)
+          .filter((chunk) => view.state.doc.sliceString(chunk.start - 1, chunk.start) !== '#');
+
+        for (const chunk of chunks) {
+          builder.add(chunk.start, chunk.end, squigglyUnderline(chunk));
         }
 
         return builder.finish();
@@ -72,14 +82,19 @@ export const matchHighlighter = (searchWords: string[]) => {
             return;
           }
 
-          // Highlight suggestion
-          target.addClass(SuggestionCandidateHighlightClass);
+          // Positions of suggested word
+          const { positionStart, positionEnd } = target.dataset;
 
-          const pos = view.posAtDOM(target);
-          const before = view.state.doc.sliceString(Math.max(0, pos - 5), pos);
+          // Replace suggested word with a tag
+          const word = view.state.doc.sliceString(+positionStart, +positionEnd);
 
-          console.log('mousedown', target, pos, view.state.doc);
-          console.log('before', before);
+          view.dispatch({
+            changes: {
+              from: +positionStart,
+              to: +positionEnd,
+              insert: `#${word}`,
+            },
+          });
         },
       },
     }

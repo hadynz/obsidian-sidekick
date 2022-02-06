@@ -1,7 +1,15 @@
 .cm-suggestion-candidate {
-  background: url('../assets/red-underline.gif') bottom repeat-x;
+  position: relative;
+  border-bottom: 2px solid var(--interactive-accent);
 }
 
-.cm-suggestion-candidate--highlight {
-  background-color: lightsalmon;
+.cm-suggestion-candidate::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background-color: var(--interactive-accent);
+  opacity: 0.25;
 }

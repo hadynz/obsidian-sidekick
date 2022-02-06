@@ -1,5 +1,5 @@
 import { Plugin, getAllTags } from 'obsidian';
-import { matchHighlighter } from './selection';
+import { matchHighlighter, SearchWords } from './selection';
 import { ViewPlugin } from '@codemirror/view';
 
 import './index.css';
@@ -8,7 +8,7 @@ export default class TagsAutosuggestPlugin extends Plugin {
   currentExtension: ViewPlugin<any>;
 
   public async onload(): Promise<void> {
-    console.log('Tags Autosuggest plugin: loading plugin', new Date().toLocaleString());
+    console.log('Autosuggest plugin: loading plugin', new Date().toLocaleString());
 
     const reloadHighlightingExtension = () => {
       const tags = this.getUniqueTags();
@@ -20,10 +20,10 @@ export default class TagsAutosuggestPlugin extends Plugin {
   }
 
   public async onunload(): Promise<void> {
-    console.log('Tags Autosuggest plugin: unloading plugin', new Date().toLocaleString());
+    console.log('Autosuggest plugin: unloading plugin', new Date().toLocaleString());
   }
 
-  private loadCoreMirrorExtension(searchWords: string[]) {
+  private loadCoreMirrorExtension(searchWords: SearchWords) {
     // Unload any existing version of our extension
     if (this.currentExtension != null) {
       (this.app.workspace as any).unregisterEditorExtension(this.currentExtension);
@@ -33,7 +33,7 @@ export default class TagsAutosuggestPlugin extends Plugin {
     this.registerEditorExtension(this.currentExtension);
   }
 
-  private getUniqueTags(): string[] {
+  private getUniqueTags(): SearchWords {
     const fileCaches = this.app.vault.getMarkdownFiles().map((fileEntry) => {
       return {
         file: fileEntry,
@@ -41,11 +41,16 @@ export default class TagsAutosuggestPlugin extends Plugin {
       };
     });
 
+    console.log('fileCahes', fileCaches);
+
     const tags = fileCaches.reduce((acc: string[], fileCache) => {
       acc.push(...getAllTags(fileCache.metadata).map((t) => t.substring(1)));
       return acc;
     }, []);
 
-    return Array.from(new Set(tags));
+    return Array.from(new Set(tags)).reduce((acc: SearchWords, tag) => {
+      acc[tag] = 'tag';
+      return acc;
+    }, {} as SearchWords);
   }
 }
