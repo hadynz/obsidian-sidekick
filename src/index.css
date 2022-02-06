@@ -1,0 +1,7 @@
+.cm-suggestion-candidate {
+  background: url('../assets/red-underline.gif') bottom repeat-x;
+}
+
+.cm-suggestion-candidate--highlight {
+  background-color: lightsalmon;
+}

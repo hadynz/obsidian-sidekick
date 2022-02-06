@@ -1,0 +1,10 @@
+{
+  "id": "obsidian-autosuggest",
+  "name": "Autosuggest",
+  "version": "1.0.0",
+  "minAppVersion": "0.10.2",
+  "description": "...",
+  "author": "Hady Osman",
+  "authorUrl": "https://hady.geek.nz",
+  "isDesktopOnly": true
+}

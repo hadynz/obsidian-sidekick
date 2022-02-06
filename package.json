@@ -1,0 +1,70 @@
+{
+  "name": "obsidian-autosuggest",
+  "version": "1.0.0",
+  "description": "...",
+  "main": "src/index.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hadynz/obsidian-kindle-highlights.git"
+  },
+  "keywords": [],
+  "author": {
+    "name": "Hady Osman",
+    "email": "hadyos@gmail.com",
+    "url": "https://hady.geek.nz"
+  },
+  "license": "MIT",
+  "scripts": {
+    "prettier": "prettier --write '**/*.{ts,js,css,html}'",
+    "lint": "tsc --noemit && svelte-check && eslint . --ext .ts",
+    "clean": "rimraf dist main.js*",
+    "test": "jest",
+    "test-watch": "jest --watch",
+    "dev": "NODE_ENV=development webpack && cp ./dist/main.js* .",
+    "build": "NODE_ENV=production webpack",
+    "prepare": "husky install"
+  },
+  "devDependencies": {
+    "@codemirror/search": "^0.19.6",
+    "@codemirror/state": "^0.19.6",
+    "@codemirror/view": "^0.19.42",
+    "@types/faker": "^5.5.8",
+    "@types/highlight-words-core": "^1.2.1",
+    "@types/jest": "^26.0.22",
+    "@types/webpack": "^5.28.0",
+    "@typescript-eslint/eslint-plugin": "^4.22.0",
+    "@typescript-eslint/parser": "^4.22.0",
+    "babel-loader": "^8.2.2",
+    "copy-webpack-plugin": "^10.0.0",
+    "css-loader": "^6.6.0",
+    "eslint": "^7.24.0",
+    "faker": "^5.5.3",
+    "file-loader": "^6.2.0",
+    "husky": "^7.0.4",
+    "jest": "^26.6.3",
+    "lint-staged": "^11.2.4",
+    "moment": "^2.29.1",
+    "obsidian": "^0.13.11",
+    "prettier": "^2.2.1",
+    "prettier-plugin-svelte": "^2.2.0",
+    "rimraf": "^3.0.2",
+    "style-loader": "^3.3.1",
+    "terser-webpack-plugin": "^5.2.5",
+    "ts-jest": "^26.5.4",
+    "ts-loader": "^8.1.0",
+    "ts-node": "^10.4.0",
+    "typescript": "^4.2.3",
+    "uglify-js": "^3.14.3",
+    "url-loader": "^4.1.1",
+    "webpack": "^5.30.0",
+    "webpack-cli": "^4.6.0",
+    "webpack-node-externals": "^2.5.2"
+  },
+  "lint-staged": {
+    "*.ts": "eslint --cache --fix",
+    "*.{js,css,md}": "prettier --write"
+  },
+  "dependencies": {
+    "highlight-words-core": "^1.2.2"
+  }
+}

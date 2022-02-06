@@ -1,0 +1,8 @@
+{
+  "printWidth": 95,
+  "svelteSortOrder": "scripts-markup-styles",
+  "svelteBracketNewLine": true,
+  "svelteAllowShorthand": true,
+  "svelteIndentScriptAndStyle": true,
+  "singleQuote": true
+}

@@ -1,0 +1,22 @@
+# Intellij
+*.iml
+.idea
+
+# npm
+node_modules
+
+# nunjucks file
+main.js.LICENSE.txt
+
+# eslint
+.eslintcache
+
+# obsidian plugin files
+main.js
+main.js.map
+data.json
+
+coverage
+dist
+tsconfig.tsbuildinfo
+.env
