@@ -6,38 +6,33 @@ import {
   ViewUpdate,
 } from '@codemirror/view';
 import { RangeSetBuilder } from '@codemirror/rangeset';
-import { debounce, Debouncer } from 'obsidian';
-import { findAll, Chunk } from 'highlight-words-core';
-import tippy, { Tippy, Instance } from 'tippy.js';
+import { debounce, Debouncer, App } from 'obsidian';
+import tippy, { Instance } from 'tippy.js';
+
+import Search from './search';
 
 import 'tippy.js/dist/tippy.css';
 
 const SuggestionCandidateClass = 'cm-suggestion-candidate';
 
-const squigglyUnderline = (chunk: Chunk) =>
+const squigglyUnderline = ({ start, end }: { start: number; end: number }) =>
   Decoration.mark({
     class: SuggestionCandidateClass,
     attributes: {
-      'data-position-start': `${chunk.start}`,
-      'data-position-end': `${chunk.end}`,
+      'data-position-start': `${start}`,
+      'data-position-end': `${end}`,
     },
   });
 
-export type SearchWords = {
-  [key: string]: 'tag' | 'link';
-};
-
 let tippyInstance: Instance;
 
-export const matchHighlighter = (searchWords: SearchWords) => {
+export const suggestionsHighlighter = (search: Search) => {
   return ViewPlugin.fromClass(
     class {
       decorations: DecorationSet;
       delayedDecorateView: Debouncer<[view: EditorView]>;
 
       constructor(view: EditorView) {
-        console.log('constructor running');
-
         this.updateDebouncer(view);
         this.decorations = this.decorateView(view);
       }
@@ -63,16 +58,11 @@ export const matchHighlighter = (searchWords: SearchWords) => {
         const builder = new RangeSetBuilder<Decoration>();
 
         const textToHighlight = view.state.doc.slice(0).toJSON().join('\n');
+        const results = search.find(textToHighlight);
 
-        const chunks = findAll({ searchWords: Object.keys(searchWords), textToHighlight })
-          .filter((chunk) => chunk.highlight)
-          .filter((chunk) => view.state.doc.sliceString(chunk.start - 1, chunk.start) !== '#');
-
-        for (const chunk of chunks) {
-          builder.add(chunk.start, chunk.end, squigglyUnderline(chunk));
+        for (const result of results) {
+          builder.add(result.start, result.end, squigglyUnderline(result));
         }
-
-        console.log('render suggestions');
 
         return builder.finish();
       }
@@ -96,14 +86,14 @@ export const matchHighlighter = (searchWords: SearchWords) => {
           const word = view.state.doc.sliceString(+positionStart, +positionEnd);
 
           const button = document.createElement('button');
-          button.innerText = `#${word}`;
+          button.innerText = search.getSuggestionReplacement(word);
           button.title = 'Suggestion';
           button.onclick = () => {
             view.dispatch({
               changes: {
                 from: +positionStart,
                 to: +positionEnd,
-                insert: `#${word}`,
+                insert: search.getSuggestionReplacement(word),
               },
             });
 
@@ -119,7 +109,6 @@ export const matchHighlighter = (searchWords: SearchWords) => {
             allowHTML: true,
             onHidden: () => {
               tippyInstance.destroy();
-              console.log('instance destroyed');
             },
           });
         },
