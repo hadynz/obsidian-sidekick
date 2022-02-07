@@ -8,6 +8,9 @@ import {
 import { RangeSetBuilder } from '@codemirror/rangeset';
 import { debounce, Debouncer } from 'obsidian';
 import { findAll, Chunk } from 'highlight-words-core';
+import tippy, { Tippy, Instance } from 'tippy.js';
+
+import 'tippy.js/dist/tippy.css';
 
 const SuggestionCandidateClass = 'cm-suggestion-candidate';
 
@@ -24,6 +27,8 @@ export type SearchWords = {
   [key: string]: 'tag' | 'link';
 };
 
+let tippyInstance: Instance;
+
 export const matchHighlighter = (searchWords: SearchWords) => {
   return ViewPlugin.fromClass(
     class {
@@ -31,6 +36,8 @@ export const matchHighlighter = (searchWords: SearchWords) => {
       delayedDecorateView: Debouncer<[view: EditorView]>;
 
       constructor(view: EditorView) {
+        console.log('constructor running');
+
         this.updateDebouncer(view);
         this.decorations = this.decorateView(view);
       }
@@ -55,8 +62,6 @@ export const matchHighlighter = (searchWords: SearchWords) => {
       decorateView(view: EditorView): DecorationSet {
         const builder = new RangeSetBuilder<Decoration>();
 
-        console.log('view.state.doc', view.state.doc.toJSON());
-
         const textToHighlight = view.state.doc.slice(0).toJSON().join('\n');
 
         const chunks = findAll({ searchWords: Object.keys(searchWords), textToHighlight })
@@ -66,6 +71,8 @@ export const matchHighlighter = (searchWords: SearchWords) => {
         for (const chunk of chunks) {
           builder.add(chunk.start, chunk.end, squigglyUnderline(chunk));
         }
+
+        console.log('render suggestions');
 
         return builder.finish();
       }
@@ -88,11 +95,31 @@ export const matchHighlighter = (searchWords: SearchWords) => {
           // Replace suggested word with a tag
           const word = view.state.doc.sliceString(+positionStart, +positionEnd);
 
-          view.dispatch({
-            changes: {
-              from: +positionStart,
-              to: +positionEnd,
-              insert: `#${word}`,
+          const button = document.createElement('button');
+          button.innerText = `#${word}`;
+          button.title = 'Suggestion';
+          button.onclick = () => {
+            view.dispatch({
+              changes: {
+                from: +positionStart,
+                to: +positionEnd,
+                insert: `#${word}`,
+              },
+            });
+
+            tippyInstance.hide();
+          };
+
+          tippyInstance = tippy(target, {
+            content: button,
+            trigger: 'click',
+            theme: 'obsidian',
+            interactive: true,
+            appendTo: document.body,
+            allowHTML: true,
+            onHidden: () => {
+              tippyInstance.destroy();
+              console.log('instance destroyed');
             },
           });
         },

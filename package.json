@@ -65,6 +65,7 @@
     "*.{js,css,md}": "prettier --write"
   },
   "dependencies": {
-    "highlight-words-core": "^1.2.2"
+    "highlight-words-core": "^1.2.2",
+    "tippy.js": "^6.3.7"
   }
 }

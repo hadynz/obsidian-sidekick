@@ -12,4 +12,23 @@
   right: 0;
   background-color: var(--interactive-accent);
   opacity: 0.25;
+  z-index: -1;
+}
+
+.tippy-box[data-theme~='obsidian'] {
+  background-color: var(--background-secondary-alt);
+  color: var(--text-normal);
+}
+
+.tippy-box[data-theme~='obsidian'] .tippy-content {
+  padding: 5px 7px 7px;
+}
+
+.tippy-box[data-theme~='obsidian'] .tippy-arrow {
+  color: var(--background-secondary-alt);
+}
+
+.tippy-box[data-theme~='obsidian'] button {
+  padding: 4px 14px;
+  margin: 0;
 }
