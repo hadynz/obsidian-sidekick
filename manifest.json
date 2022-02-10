@@ -1,6 +1,6 @@
 {
   "id": "obsidian-autosuggest",
-  "name": "Autosuggest Connections",
+  "name": "Autosuggest",
   "version": "1.0.0",
   "minAppVersion": "0.13.",
   "description": "Autosuggest new connections by highlighting text that could match existing links and tags",
