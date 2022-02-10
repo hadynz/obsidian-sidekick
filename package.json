@@ -16,7 +16,7 @@
   "license": "MIT",
   "scripts": {
     "prettier": "prettier --write '**/*.{ts,js,css,html}'",
-    "lint": "tsc --noemit && svelte-check && eslint . --ext .ts",
+    "lint": "tsc --noemit && eslint . --ext .ts",
     "clean": "rimraf dist main.js*",
     "test": "jest",
     "test-watch": "jest --watch",

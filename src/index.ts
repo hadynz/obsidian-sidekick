@@ -1,13 +1,13 @@
 import { Plugin } from 'obsidian';
 import { suggestionsExtension } from './suggestionsExtension';
-import { ViewPlugin } from '@codemirror/view';
+import { ViewPlugin, PluginValue } from '@codemirror/view';
 
 import Search from './search';
 
 import './index.css';
 
 export default class TagsAutosuggestPlugin extends Plugin {
-  currentExtension: ViewPlugin<any>;
+  currentExtension: ViewPlugin<PluginValue>;
 
   public async onload(): Promise<void> {
     console.log('Autosuggest plugin: loading plugin', new Date().toLocaleString());
@@ -17,6 +17,7 @@ export default class TagsAutosuggestPlugin extends Plugin {
     search.on('updated-index', () => {
       // Unload any existing version of our extension
       if (this.currentExtension != null) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (this.app.workspace as any).unregisterEditorExtension(this.currentExtension);
       }
 

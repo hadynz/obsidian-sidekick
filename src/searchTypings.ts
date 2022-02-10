@@ -17,7 +17,7 @@ export class TagIndex implements SearchIndex {
     return `#${this.tag}`;
   }
 
-  public isDefinedInFile(file: TFile): boolean {
+  public isDefinedInFile(_file: TFile): boolean {
     return false;
   }
 }

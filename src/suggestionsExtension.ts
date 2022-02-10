@@ -4,9 +4,10 @@ import {
   EditorView,
   ViewPlugin,
   ViewUpdate,
+  PluginValue,
 } from '@codemirror/view';
 import { RangeSetBuilder } from '@codemirror/rangeset';
-import { debounce, Debouncer, App } from 'obsidian';
+import { debounce, Debouncer } from 'obsidian';
 
 import Search from './search';
 import { SuggestionsPopup } from './suggestionsPopup';
@@ -22,7 +23,7 @@ const squigglyUnderline = ({ start, end }: { start: number; end: number }) =>
     },
   });
 
-export const suggestionsExtension = (search: Search) => {
+export const suggestionsExtension = (search: Search): ViewPlugin<PluginValue> => {
   return ViewPlugin.fromClass(
     class {
       decorations: DecorationSet;
