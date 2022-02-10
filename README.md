@@ -19,7 +19,7 @@ Support development: @hadynz on [Twitter][2] or [Buy me a coffee][1]
 
 ### Preview
 
-
+![Kapture 2022-02-11 at 00 34 23](https://user-images.githubusercontent.com/315585/153401639-11a295c6-ab3e-4afd-945e-9fc3043d74a2.gif)
 
 ## License
 
