@@ -54,7 +54,7 @@ export const suggestionsExtension = (search: Search) => {
         const builder = new RangeSetBuilder<Decoration>();
 
         const textToHighlight = view.state.doc.slice(0).toJSON().join('\n');
-        const results = search.find(textToHighlight);
+        const results = textToHighlight ? search.find(textToHighlight) : [];
 
         for (const result of results) {
           builder.add(result.start, result.end, squigglyUnderline(result));

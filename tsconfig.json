@@ -2,6 +2,7 @@
   "include": ["src/**/*", "tests/**/*", "webpack.config.ts"],
   "exclude": ["node_modules/*"],
   "compilerOptions": {
+    "target": "es5",
     "types": ["node", "svelte", "jest"],
     "baseUrl": ".",
     "paths": {

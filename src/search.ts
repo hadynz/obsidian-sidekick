@@ -1,12 +1,7 @@
 import { App, getAllTags, TFile, CachedMetadata } from 'obsidian';
 import { findAll } from 'highlight-words-core';
 
-type WordIndex = {
-  type: 'tag' | 'link';
-  text: string;
-  replaceText: string;
-  isAlias?: boolean;
-};
+import { PageIndex, SearchIndex, TagIndex, AliasIndex } from './searchTypings';
 
 type SearchResult = {
   start: number;
@@ -19,8 +14,7 @@ type ObsidianCache = {
 };
 
 export default class Search {
-  private searchIndex: WordIndex[] = [];
-  private obsidianCache: ObsidianCache[] = [];
+  private searchIndex: SearchIndex[] = [];
   private callbacks: (() => void)[] = [];
 
   constructor(private app: App) {
@@ -33,15 +27,15 @@ export default class Search {
   }
 
   public getSuggestionReplacement(text: string): string {
-    return this.searchIndex.find((word) => word.text === text).replaceText;
+    return this.searchIndex.find((index) => index.text === text).replaceText;
   }
 
   public find(unlinkedText: string): SearchResult[] {
-    const activeFilename = this.getFileName(this.app.workspace.getActiveFile());
+    const activeFile = this.app.workspace.getActiveFile();
 
     const searchWords = this.searchIndex
-      .filter((word) => activeFilename !== word.text)
-      .map((word) => word.text);
+      .filter((index) => !index.isDefinedInFile(activeFile))
+      .map((index) => index.text);
 
     // Strip out hashtags and links as we don't need to bother searching them
     const textToHighlight = unlinkedText
@@ -54,41 +48,32 @@ export default class Search {
   }
 
   private indexAll(): void {
-    this.obsidianCache = this.app.vault.getMarkdownFiles().map((file) => ({
+    this.searchIndex = [];
+
+    const cache = this.app.vault.getMarkdownFiles().map((file) => ({
       file,
       metadata: this.app.metadataCache.getFileCache(file),
     }));
 
-    this.searchIndex = [];
-    this.indexLinks();
-    this.indexTags();
+    this.indexLinks(cache);
+    this.indexTags(cache);
 
     // Notify all listeners that the index has been updated
     this.callbacks.forEach((cb) => cb());
   }
 
-  private indexLinks(): void {
-    this.obsidianCache.forEach((fileCache) => {
-      this.searchIndex.push({
-        type: 'link',
-        text: this.getFileName(fileCache.file),
-        replaceText: `[[${fileCache.file.basename}]]`,
-        isAlias: false,
-      });
+  private indexLinks(cache: ObsidianCache[]): void {
+    cache.forEach((fileCache) => {
+      this.searchIndex.push(new PageIndex(fileCache.file));
 
       fileCache.metadata.frontmatter?.aliases?.forEach((alias: string) => {
-        this.searchIndex.push({
-          type: 'link',
-          text: alias.toLowerCase(),
-          replaceText: `[[${fileCache.file.basename}|${alias}]]`,
-          isAlias: true,
-        });
+        this.searchIndex.push(new AliasIndex(alias, fileCache.file));
       });
     });
   }
 
-  private indexTags(): void {
-    const tags = this.obsidianCache.reduce((acc: string[], fileCache) => {
+  private indexTags(cache: ObsidianCache[]): void {
+    const tags = cache.reduce((acc: string[], fileCache) => {
       acc.push(...getAllTags(fileCache.metadata).map((t) => t.substring(1)));
       return acc;
     }, []);
@@ -96,15 +81,7 @@ export default class Search {
     const uniqueTags = Array.from(new Set(tags));
 
     for (const tag of uniqueTags) {
-      this.searchIndex.push({
-        type: 'tag',
-        text: tag.toLowerCase(),
-        replaceText: `#${tag}`,
-      });
+      this.searchIndex.push(new TagIndex(tag));
     }
-  }
-
-  private getFileName(file: TFile): string {
-    return file.basename.toLowerCase();
   }
 }
