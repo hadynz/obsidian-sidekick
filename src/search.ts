@@ -1,12 +1,11 @@
 import { App, getAllTags, TFile, CachedMetadata } from 'obsidian';
 import { findAll } from 'highlight-words-core';
 
-type SearchIndex = {
-  [key: string]: {
-    type: 'tag' | 'link';
-    replaceText: string;
-    isAlias?: boolean;
-  };
+type WordIndex = {
+  type: 'tag' | 'link';
+  text: string;
+  replaceText: string;
+  isAlias?: boolean;
 };
 
 type SearchResult = {
@@ -20,13 +19,13 @@ type ObsidianCache = {
 };
 
 export default class Search {
-  private searchIndex: SearchIndex = {};
+  private searchIndex: WordIndex[] = [];
   private obsidianCache: ObsidianCache[] = [];
   private callbacks: (() => void)[] = [];
 
   constructor(private app: App) {
     this.app.workspace.onLayoutReady(() => this.indexAll());
-    this.app.vault.on('modify', () => this.indexAll);
+    this.app.vault.on('modify', () => this.indexAll());
   }
 
   public on(_event: 'updated-index', callback: () => void): void {
@@ -34,14 +33,18 @@ export default class Search {
   }
 
   public getSuggestionReplacement(text: string): string {
-    return this.searchIndex[text.toLowerCase()].replaceText;
+    return this.searchIndex.find((word) => word.text === text).replaceText;
   }
 
-  public find(text: string): SearchResult[] {
-    const searchWords = Object.keys(this.searchIndex);
+  public find(unlinkedText: string): SearchResult[] {
+    const activeFilename = this.getFileName(this.app.workspace.getActiveFile());
+
+    const searchWords = this.searchIndex
+      .filter((word) => activeFilename !== word.text)
+      .map((word) => word.text);
 
     // Strip out hashtags and links as we don't need to bother searching them
-    const textToHighlight = text
+    const textToHighlight = unlinkedText
       .replace(/#+([a-zA-Z0-9_]+)/g, (m) => ' '.repeat(m.length)) // remove hashtags
       .replace(/\[(.*?)\]+/g, (m) => ' '.repeat(m.length)); // remove links
 
@@ -56,6 +59,7 @@ export default class Search {
       metadata: this.app.metadataCache.getFileCache(file),
     }));
 
+    this.searchIndex = [];
     this.indexLinks();
     this.indexTags();
 
@@ -65,18 +69,20 @@ export default class Search {
 
   private indexLinks(): void {
     this.obsidianCache.forEach((fileCache) => {
-      this.searchIndex[fileCache.file.basename.toLowerCase()] = {
+      this.searchIndex.push({
         type: 'link',
-        isAlias: false,
+        text: this.getFileName(fileCache.file),
         replaceText: `[[${fileCache.file.basename}]]`,
-      };
+        isAlias: false,
+      });
 
       fileCache.metadata.frontmatter?.aliases?.forEach((alias: string) => {
-        this.searchIndex[alias.toLowerCase()] = {
+        this.searchIndex.push({
           type: 'link',
-          isAlias: true,
+          text: alias.toLowerCase(),
           replaceText: `[[${fileCache.file.basename}|${alias}]]`,
-        };
+          isAlias: true,
+        });
       });
     });
   }
@@ -90,10 +96,15 @@ export default class Search {
     const uniqueTags = Array.from(new Set(tags));
 
     for (const tag of uniqueTags) {
-      this.searchIndex[tag.toLowerCase()] = {
+      this.searchIndex.push({
         type: 'tag',
+        text: tag.toLowerCase(),
         replaceText: `#${tag}`,
-      };
+      });
     }
+  }
+
+  private getFileName(file: TFile): string {
+    return file.basename.toLowerCase();
   }
 }

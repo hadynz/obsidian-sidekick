@@ -7,11 +7,9 @@ import {
 } from '@codemirror/view';
 import { RangeSetBuilder } from '@codemirror/rangeset';
 import { debounce, Debouncer, App } from 'obsidian';
-import tippy, { Instance } from 'tippy.js';
 
 import Search from './search';
-
-import 'tippy.js/dist/tippy.css';
+import { SuggestionsPopup } from './suggestionsPopup';
 
 const SuggestionCandidateClass = 'cm-suggestion-candidate';
 
@@ -24,9 +22,7 @@ const squigglyUnderline = ({ start, end }: { start: number; end: number }) =>
     },
   });
 
-let tippyInstance: Instance;
-
-export const suggestionsHighlighter = (search: Search) => {
+export const suggestionsExtension = (search: Search) => {
   return ViewPlugin.fromClass(
     class {
       decorations: DecorationSet;
@@ -54,7 +50,7 @@ export const suggestionsHighlighter = (search: Search) => {
         );
       }
 
-      decorateView(view: EditorView): DecorationSet {
+      private decorateView(view: EditorView): DecorationSet {
         const builder = new RangeSetBuilder<Decoration>();
 
         const textToHighlight = view.state.doc.slice(0).toJSON().join('\n');
@@ -71,7 +67,7 @@ export const suggestionsHighlighter = (search: Search) => {
       decorations: (view) => view.decorations,
 
       eventHandlers: {
-        mousedown: (e, view) => {
+        mousedown: (e: MouseEvent, view: EditorView) => {
           const target = e.target as HTMLElement;
           const isCandidate = target.classList.contains(SuggestionCandidateClass);
 
@@ -84,31 +80,20 @@ export const suggestionsHighlighter = (search: Search) => {
 
           // Replace suggested word with a tag
           const word = view.state.doc.sliceString(+positionStart, +positionEnd);
+          const replaceText = search.getSuggestionReplacement(word);
 
-          const button = document.createElement('button');
-          button.innerText = search.getSuggestionReplacement(word);
-          button.title = 'Suggestion';
-          button.onclick = () => {
-            view.dispatch({
-              changes: {
-                from: +positionStart,
-                to: +positionEnd,
-                insert: search.getSuggestionReplacement(word),
-              },
-            });
-
-            tippyInstance.hide();
-          };
-
-          tippyInstance = tippy(target, {
-            content: button,
-            trigger: 'click',
-            theme: 'obsidian',
-            interactive: true,
-            appendTo: document.body,
-            allowHTML: true,
-            onHidden: () => {
-              tippyInstance.destroy();
+          const popup = new SuggestionsPopup();
+          popup.show({
+            target,
+            text: replaceText,
+            onClick: () => {
+              view.dispatch({
+                changes: {
+                  from: +positionStart,
+                  to: +positionEnd,
+                  insert: replaceText,
+                },
+              });
             },
           });
         },

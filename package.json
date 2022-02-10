@@ -1,7 +1,7 @@
 {
-  "name": "obsidian-autosuggest",
+  "name": "obsidian-autosuggest-connections",
   "version": "1.0.0",
-  "description": "...",
+  "description": "Autosuggest new connections by highlighting text that could match existing links and tags",
   "main": "src/index.ts",
   "repository": {
     "type": "git",

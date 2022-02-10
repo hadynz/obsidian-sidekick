@@ -1,5 +1,5 @@
 import { Plugin } from 'obsidian';
-import { suggestionsHighlighter } from './suggestions';
+import { suggestionsExtension } from './suggestionsExtension';
 import { ViewPlugin } from '@codemirror/view';
 
 import Search from './search';
@@ -20,7 +20,7 @@ export default class TagsAutosuggestPlugin extends Plugin {
         (this.app.workspace as any).unregisterEditorExtension(this.currentExtension);
       }
 
-      this.currentExtension = suggestionsHighlighter(search);
+      this.currentExtension = suggestionsExtension(search);
       this.registerEditorExtension(this.currentExtension);
     });
   }
