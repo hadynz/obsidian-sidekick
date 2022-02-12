@@ -1,7 +1,7 @@
 # Sidekick
 
-![CI/CD status](https://github.com/hadynz/obsidian-autosuggest/actions/workflows/main.yml/badge.svg)
-![GitHub release (latest by date)](https://img.shields.io/github/v/release/hadynz/obsidian-autosuggest)
+![CI/CD status](https://github.com/hadynz/obsidian-sidekick/actions/workflows/main.yml/badge.svg)
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/hadynz/obsidian-sidekick)
 
 An [Obsidian][3] plugin that auto-suggests new connections to make by underlining text that matches
 existing tags or links in your vault.
@@ -10,7 +10,7 @@ Support development: @hadynz on [Twitter][2] or [Buy me a coffee][1]
 
 <a href="https://www.buymeacoffee.com/hadynz"><img src="https://img.buymeacoffee.com/button-api/?text=Buy me a coffee&emoji=&slug=hadynz&button_colour=5F7FFF&font_colour=ffffff&font_family=Poppins&outline_colour=000000&coffee_colour=FFDD00"></a>
 
-## About Autosuggest
+## About Sidekick
 
 ### Goals
 
