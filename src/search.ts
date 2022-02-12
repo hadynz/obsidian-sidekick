@@ -36,7 +36,13 @@ export default class Search {
 
     const searchWords = this.searchIndex
       .filter((index) => !index.isDefinedInFile(activeFile))
-      .map((index) => index.text);
+      .map((index) => {
+        try {
+          return index.text;
+        } catch (err) {
+          console.error('Cannot return text value of index', index, err);
+        }
+      });
 
     // Strip out hashtags and links as we don't need to bother searching them
     const textToHighlight = unlinkedText
