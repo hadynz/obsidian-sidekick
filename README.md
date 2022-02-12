@@ -1,4 +1,4 @@
-# Autosuggest
+# Sidekick
 
 ![CI/CD status](https://github.com/hadynz/obsidian-autosuggest/actions/workflows/main.yml/badge.svg)
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/hadynz/obsidian-autosuggest)
@@ -21,10 +21,15 @@ Support development: @hadynz on [Twitter][2] or [Buy me a coffee][1]
 
 ![Kapture 2022-02-11 at 00 34 23](https://user-images.githubusercontent.com/315585/153401639-11a295c6-ab3e-4afd-945e-9fc3043d74a2.gif)
 
+## My other plugins
+
+* [Kindle Highlights][4] - sync your Kindle notes and highlights directly into your Obsidian vault
+
 ## License
 
 [MIT](LICENSE)
 
 [1]: https://www.buymeacoffee.com/hadynz
 [2]: https://twitter.com/hadynz
-[3]: https://obsidian.md/
+[3]: https://obsidian.md
+[4]: https://github.com/hadynz/obsidian-kindle-plugin

@@ -1,13 +1,18 @@
 {
-  "name": "obsidian-autosuggest",
-  "version": "1.0.0",
-  "description": "Autosuggest new connections by highlighting text that could match existing links and tags",
+  "name": "obsidian-sidekick",
+  "version": "1.0.1",
+  "description": "A companion to identify hidden connections that match your tags and pages",
   "main": "src/index.ts",
   "repository": {
     "type": "git",
-    "url": "https://github.com/hadynz/obsidian-kindle-highlights.git"
+    "url": "https://github.com/hadynz/obsidian-sidekick.git"
   },
-  "keywords": [],
+  "keywords": [
+    "obsidian",
+    "autocomplete",
+    "autosuggestion",
+    "connections"
+  ],
   "author": {
     "name": "Hady Osman",
     "email": "hadyos@gmail.com",

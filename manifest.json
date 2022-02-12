@@ -1,10 +1,10 @@
 {
-  "id": "obsidian-autosuggest",
-  "name": "Autosuggest",
-  "version": "1.0.0",
-  "minAppVersion": "0.13.",
-  "description": "Autosuggest new connections by highlighting text that could match existing links and tags",
+  "id": "obsidian-sidekick",
+  "name": "Sidekick",
+  "description": "A companion to identify hidden connections that match your tags and pages",
+  "version": "1.0.1",
+  "minAppVersion": "0.13.8",
   "author": "Hady Osman",
   "authorUrl": "https://hady.geek.nz",
-  "isDesktopOnly": true
+  "isDesktopOnly": false
 }
