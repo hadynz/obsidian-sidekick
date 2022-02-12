@@ -6,7 +6,9 @@ export const getAliases = (metadata: CachedMetadata): string[] => {
   if (typeof frontmatterAliases === 'string') {
     return frontmatterAliases.split(',').map((alias: string) => alias.trim());
   } else if (Array.isArray(frontmatterAliases)) {
-    return frontmatterAliases as string[];
+    return frontmatterAliases
+      .map((alias) => alias?.toString().trim())
+      .filter((alias: string) => alias);
   }
 
   return [];

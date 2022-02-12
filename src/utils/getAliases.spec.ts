@@ -39,4 +39,15 @@ describe('getAliases', () => {
     const aliases = getAliases(metadata);
     expect(aliases).toEqual(['foo', 'bar']);
   });
+
+  it('Array of aliases is trimmed and processed as strings', () => {
+    const metadata: CachedMetadata = {
+      frontmatter: {
+        aliases: ['foo', 'bar', null, undefined, '', '  ', 200],
+      } as unknown as FrontMatterCache,
+    };
+
+    const aliases = getAliases(metadata);
+    expect(aliases).toEqual(['foo', 'bar', '200']);
+  });
 });
