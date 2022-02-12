@@ -2,6 +2,7 @@ import { App, getAllTags, TFile, CachedMetadata } from 'obsidian';
 import { findAll } from 'highlight-words-core';
 
 import { PageIndex, SearchIndex, TagIndex, AliasIndex } from './searchTypings';
+import { getAliases } from './utils/getAliases';
 
 type SearchResult = {
   start: number;
@@ -66,7 +67,7 @@ export default class Search {
     cache.forEach((fileCache) => {
       this.searchIndex.push(new PageIndex(fileCache.file));
 
-      fileCache.metadata.frontmatter?.aliases?.forEach((alias: string) => {
+      getAliases(fileCache.metadata).forEach((alias: string) => {
         this.searchIndex.push(new AliasIndex(alias, fileCache.file));
       });
     });
