@@ -1,10 +1,9 @@
 import { Plugin } from 'obsidian';
-import { suggestionsExtension } from './suggestionsExtension';
+import { suggestionsExtension } from './cmExtension/suggestionsExtension';
 import { ViewPlugin, PluginValue } from '@codemirror/view';
 
 import Search from './search';
-
-import './index.css';
+import { Indexer } from './indexing/indexer';
 
 export default class TagsAutosuggestPlugin extends Plugin {
   currentExtension: ViewPlugin<PluginValue>;
@@ -12,9 +11,10 @@ export default class TagsAutosuggestPlugin extends Plugin {
   public async onload(): Promise<void> {
     console.log('Autosuggest plugin: loading plugin', new Date().toLocaleString());
 
-    const search = new Search(this.app);
+    const indexer = new Indexer(this.app);
+    const search = new Search(indexer);
 
-    search.on('updated-index', () => {
+    indexer.on('updated-index', () => {
       // Unload any existing version of our extension
       if (this.currentExtension != null) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any

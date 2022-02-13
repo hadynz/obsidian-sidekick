@@ -1,20 +1,14 @@
 import { App, getAllTags, TFile, CachedMetadata } from 'obsidian';
-import { findAll } from 'highlight-words-core';
 
-import { PageIndex, SearchIndex, TagIndex, AliasIndex } from './searchTypings';
-import { getAliases } from './utils/getAliases';
-
-type SearchResult = {
-  start: number;
-  end: number;
-};
+import { PageIndex, SearchIndex, TagIndex, AliasIndex } from './indexModels';
+import { getAliases } from '../utils/getAliases';
 
 type ObsidianCache = {
   file: TFile;
   metadata: CachedMetadata;
 };
 
-export default class Search {
+export class Indexer {
   private searchIndex: SearchIndex[] = [];
   private callbacks: (() => void)[] = [];
 
@@ -23,35 +17,13 @@ export default class Search {
     this.app.vault.on('modify', () => this.indexAll());
   }
 
+  public get index(): readonly SearchIndex[] {
+    const activeFile = this.app.workspace.getActiveFile();
+    return this.searchIndex.filter((index) => !index.isDefinedInFile(activeFile));
+  }
+
   public on(_event: 'updated-index', callback: () => void): void {
     this.callbacks.push(callback);
-  }
-
-  public getSuggestionReplacement(text: string): string {
-    return this.searchIndex.find((index) => index.text === text).replaceText;
-  }
-
-  public find(unlinkedText: string): SearchResult[] {
-    const activeFile = this.app.workspace.getActiveFile();
-
-    const searchWords = this.searchIndex
-      .filter((index) => !index.isDefinedInFile(activeFile))
-      .map((index) => {
-        try {
-          return index.text;
-        } catch (err) {
-          console.error('Cannot return text value of index', index, err);
-        }
-      });
-
-    // Strip out hashtags and links as we don't need to bother searching them
-    const textToHighlight = unlinkedText
-      .replace(/#+([a-zA-Z0-9_]+)/g, (m) => ' '.repeat(m.length)) // remove hashtags
-      .replace(/\[(.*?)\]+/g, (m) => ' '.repeat(m.length)); // remove links
-
-    return findAll({ searchWords, textToHighlight })
-      .filter((chunk) => chunk.highlight)
-      .map((chunk) => ({ ...chunk }));
   }
 
   private indexAll(): void {

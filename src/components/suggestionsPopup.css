@@ -1,20 +1,3 @@
-.cm-suggestion-candidate {
-  position: relative;
-  border-bottom: 2px solid var(--interactive-accent);
-}
-
-.cm-suggestion-candidate::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  right: 0;
-  background-color: var(--interactive-accent);
-  opacity: 0.25;
-  z-index: -1;
-}
-
 .tippy-box[data-theme~='obsidian'] {
   background-color: var(--background-secondary-alt);
   color: var(--text-normal);

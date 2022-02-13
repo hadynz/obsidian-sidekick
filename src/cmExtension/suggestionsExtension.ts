@@ -9,8 +9,10 @@ import {
 import { RangeSetBuilder } from '@codemirror/rangeset';
 import { debounce, Debouncer } from 'obsidian';
 
-import Search from './search';
-import { SuggestionsPopup } from './suggestionsPopup';
+import Search from '../search';
+import { SuggestionsPopup } from '../components/suggestionsPopup';
+
+import './suggestionsExtension.css';
 
 const SuggestionCandidateClass = 'cm-suggestion-candidate';
 
