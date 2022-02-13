@@ -1,24 +1,20 @@
-import { App, getAllTags, TFile, CachedMetadata } from 'obsidian';
+import _ from 'lodash';
+import { App, TFile } from 'obsidian';
 
 import { PageIndex, SearchIndex, TagIndex, AliasIndex } from './indexModels';
-import { getAliases } from '../utils/getAliases';
-
-type ObsidianCache = {
-  file: TFile;
-  metadata: CachedMetadata;
-};
+import { AppHelper } from '../app-helper';
 
 export class Indexer {
   private searchIndex: SearchIndex[] = [];
   private callbacks: (() => void)[] = [];
 
-  constructor(private app: App) {
+  constructor(private app: App, private appHelper: AppHelper) {
     this.app.workspace.onLayoutReady(() => this.indexAll());
     this.app.vault.on('modify', () => this.indexAll());
   }
 
   public get index(): readonly SearchIndex[] {
-    const activeFile = this.app.workspace.getActiveFile();
+    const activeFile = this.appHelper.activeFile;
     return this.searchIndex.filter((index) => !index.isDefinedInFile(activeFile));
   }
 
@@ -27,40 +23,32 @@ export class Indexer {
   }
 
   private indexAll(): void {
-    this.searchIndex = [];
+    const allFiles = this.app.vault.getMarkdownFiles();
 
-    const cache = this.app.vault.getMarkdownFiles().map((file) => ({
-      file,
-      metadata: this.app.metadataCache.getFileCache(file),
-    }));
+    const fileIndices = allFiles.map((file) => this.indexFile(file)).flat();
 
-    this.indexLinks(cache);
-    this.indexTags(cache);
+    this.searchIndex = [...fileIndices, ...this.indexAllTags(allFiles)];
 
     // Notify all listeners that the index has been updated
     this.callbacks.forEach((cb) => cb());
   }
 
-  private indexLinks(cache: ObsidianCache[]): void {
-    cache.forEach((fileCache) => {
-      this.searchIndex.push(new PageIndex(fileCache.file));
+  private indexFile(file: TFile): SearchIndex[] {
+    const pageIndex = new PageIndex(file);
 
-      getAliases(fileCache.metadata).forEach((alias: string) => {
-        this.searchIndex.push(new AliasIndex(alias, fileCache.file));
-      });
-    });
+    const aliasIndices = this.appHelper
+      .getAliases(file)
+      .map((alias) => new AliasIndex(file, alias));
+
+    return [pageIndex, ...aliasIndices];
   }
 
-  private indexTags(cache: ObsidianCache[]): void {
-    const tags = cache.reduce((acc: string[], fileCache) => {
-      acc.push(...getAllTags(fileCache.metadata).map((t) => t.substring(1)));
-      return acc;
+  private indexAllTags(files: TFile[]): TagIndex[] {
+    const tagIndices: TagIndex[] = files.reduce((acc, file) => {
+      const tags = this.appHelper.getTags(file).map((tag) => new TagIndex(tag));
+      return [...acc, ...tags];
     }, []);
 
-    const uniqueTags = Array.from(new Set(tags));
-
-    for (const tag of uniqueTags) {
-      this.searchIndex.push(new TagIndex(tag));
-    }
+    return _.uniqBy(tagIndices, (x) => x.index);
   }
 }

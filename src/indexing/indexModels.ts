@@ -1,18 +1,18 @@
 import { TFile } from 'obsidian';
 
 export interface SearchIndex {
-  text: string;
-  replaceText: string;
+  index: string;
+  displayText: string;
   isDefinedInFile: (file: TFile) => boolean;
 }
 
 export class TagIndex implements SearchIndex {
-  public readonly text: string;
-  public readonly replaceText: string;
+  public readonly index: string;
+  public readonly displayText: string;
 
-  constructor(private tag: string) {
-    this.text = tag.toLowerCase();
-    this.replaceText = `#${this.tag}`;
+  constructor(tag: string) {
+    this.index = tag.toLowerCase().replace(/#/, '');
+    this.displayText = tag;
   }
 
   public isDefinedInFile(_file: TFile): boolean {
@@ -21,12 +21,12 @@ export class TagIndex implements SearchIndex {
 }
 
 export class AliasIndex implements SearchIndex {
-  public readonly text: string;
-  public readonly replaceText: string;
+  public readonly index: string;
+  public readonly displayText: string;
 
-  constructor(word: string, private file: TFile) {
-    this.text = word.toLowerCase();
-    this.replaceText = `[[${file.basename}|${word}]]`;
+  constructor(private file: TFile, word: string) {
+    this.index = word.toLowerCase();
+    this.displayText = `[[${file.basename}|${word}]]`;
   }
 
   public isDefinedInFile(file: TFile): boolean {
@@ -35,12 +35,12 @@ export class AliasIndex implements SearchIndex {
 }
 
 export class PageIndex implements SearchIndex {
-  public readonly text: string;
-  public readonly replaceText: string;
+  public readonly index: string;
+  public readonly displayText: string;
 
   constructor(private file: TFile) {
-    this.text = file.basename.toLowerCase();
-    this.replaceText = `[[${file.basename}]]`;
+    this.index = file.basename.toLowerCase();
+    this.displayText = `[[${file.basename}]]`;
   }
 
   public isDefinedInFile(file: TFile): boolean {

@@ -4,6 +4,7 @@ import { ViewPlugin, PluginValue } from '@codemirror/view';
 
 import Search from './search';
 import { Indexer } from './indexing/indexer';
+import { AppHelper } from './app-helper';
 
 export default class TagsAutosuggestPlugin extends Plugin {
   currentExtension: ViewPlugin<PluginValue>;
@@ -11,7 +12,8 @@ export default class TagsAutosuggestPlugin extends Plugin {
   public async onload(): Promise<void> {
     console.log('Autosuggest plugin: loading plugin', new Date().toLocaleString());
 
-    const indexer = new Indexer(this.app);
+    const appHelper = new AppHelper(this.app);
+    const indexer = new Indexer(this.app, appHelper);
     const search = new Search(indexer);
 
     indexer.on('updated-index', () => {

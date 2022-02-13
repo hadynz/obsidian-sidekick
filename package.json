@@ -1,6 +1,6 @@
 {
   "name": "obsidian-sidekick",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "A companion to identify hidden connections that match your tags and pages",
   "main": "src/index.ts",
   "repository": {
@@ -36,6 +36,7 @@
     "@types/faker": "^5.5.8",
     "@types/highlight-words-core": "^1.2.1",
     "@types/jest": "^26.0.22",
+    "@types/lodash": "^4.14.178",
     "@types/webpack": "^5.28.0",
     "@typescript-eslint/eslint-plugin": "^4.22.0",
     "@typescript-eslint/parser": "^4.22.0",
@@ -71,6 +72,7 @@
   },
   "dependencies": {
     "highlight-words-core": "^1.2.2",
+    "lodash": "^4.17.21",
     "tippy.js": "^6.3.7"
   }
 }

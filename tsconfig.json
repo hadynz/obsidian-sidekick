@@ -10,7 +10,8 @@
       "~/*": ["src/*"]
     },
     "resolveJsonModule": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "downlevelIteration": true
   },
   // Fixes errors when changing `module` to ES in the above compiler options
   // See: https://github.com/webpack/webpack-cli/issues/2458#issuecomment-846635277

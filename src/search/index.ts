@@ -10,13 +10,13 @@ export default class Search {
   constructor(private indexer: Indexer) {}
 
   public getSuggestionReplacement(text: string): string {
-    return this.indexer.index.find((index) => index.text === text).replaceText;
+    return this.indexer.index.find((index) => index.index === text.toLowerCase()).displayText;
   }
 
   public find(text: string): SearchResult[] {
     const searchWords = this.indexer.index.map((index) => {
       try {
-        return index.text;
+        return index.index;
       } catch (err) {
         console.error('Cannot return text value of index', index, err);
       }
