@@ -1,5 +1,5 @@
 import _ from 'lodash';
-import { App, TFile } from 'obsidian';
+import { TFile } from 'obsidian';
 
 import { PageIndex, SearchIndex, TagIndex, AliasIndex } from './indexModels';
 import { AppHelper } from '../app-helper';
@@ -8,10 +8,7 @@ export class Indexer {
   private searchIndex: SearchIndex[] = [];
   private callbacks: (() => void)[] = [];
 
-  constructor(private app: App, private appHelper: AppHelper) {
-    this.app.workspace.onLayoutReady(() => this.indexAll());
-    this.app.vault.on('modify', () => this.indexAll());
-  }
+  constructor(private appHelper: AppHelper) {}
 
   public get index(): readonly SearchIndex[] {
     const activeFile = this.appHelper.activeFile;
@@ -22,8 +19,8 @@ export class Indexer {
     this.callbacks.push(callback);
   }
 
-  private indexAll(): void {
-    const allFiles = this.app.vault.getMarkdownFiles();
+  public indexAll(): void {
+    const allFiles = this.appHelper.getAllFiles();
 
     const fileIndices = allFiles.map((file) => this.indexFile(file)).flat();
 

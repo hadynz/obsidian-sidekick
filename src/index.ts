@@ -13,8 +13,16 @@ export default class TagsAutosuggestPlugin extends Plugin {
     console.log('Autosuggest plugin: loading plugin', new Date().toLocaleString());
 
     const appHelper = new AppHelper(this.app);
-    const indexer = new Indexer(this.app, appHelper);
+    const indexer = new Indexer(appHelper);
     const search = new Search(indexer);
+
+    this.app.workspace.onLayoutReady(() => {
+      // Index every time a file is modified
+      this.registerEvent(this.app.vault.on('modify', () => indexer.indexAll()));
+
+      // Index on startup
+      indexer.indexAll();
+    });
 
     indexer.on('updated-index', () => {
       // Unload any existing version of our extension

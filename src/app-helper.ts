@@ -21,6 +21,10 @@ export class AppHelper {
     return _.uniq(tags);
   }
 
+  public getAllFiles(): TFile[] {
+    return this.app.vault.getMarkdownFiles();
+  }
+
   private getFrontMatterTags(file: TFile): string[] {
     return parseFrontMatterTags(this.app.metadataCache.getFileCache(file)?.frontmatter) ?? [];
   }
