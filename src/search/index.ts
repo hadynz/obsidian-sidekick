@@ -4,6 +4,7 @@ import { Indexer } from '../indexing/indexer';
 type SearchResult = {
   start: number;
   end: number;
+  matchingWord: string;
 };
 
 export default class Search {
@@ -29,6 +30,9 @@ export default class Search {
 
     return findAll({ searchWords, textToHighlight })
       .filter((chunk) => chunk.highlight)
-      .map((chunk) => ({ ...chunk }));
+      .map((chunk) => ({
+        ...chunk,
+        matchingWord: textToHighlight.substring(chunk.start, chunk.end),
+      }));
   }
 }

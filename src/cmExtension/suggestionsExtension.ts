@@ -16,10 +16,11 @@ import './suggestionsExtension.css';
 
 const SuggestionCandidateClass = 'cm-suggestion-candidate';
 
-const squigglyUnderline = ({ start, end }: { start: number; end: number }) =>
+const underlineDecoration = (start: number, end: number, word: string) =>
   Decoration.mark({
     class: SuggestionCandidateClass,
     attributes: {
+      'data-search-word': word,
       'data-position-start': `${start}`,
       'data-position-end': `${end}`,
     },
@@ -37,7 +38,7 @@ export const suggestionsExtension = (search: Search): ViewPlugin<PluginValue> =>
       }
 
       public update(update: ViewUpdate): void {
-        if (update.docChanged) {
+        if (update.docChanged || update.viewportChanged) {
           this.delayedDecorateView(update.view);
         }
       }
@@ -56,11 +57,19 @@ export const suggestionsExtension = (search: Search): ViewPlugin<PluginValue> =>
       private decorateView(view: EditorView): DecorationSet {
         const builder = new RangeSetBuilder<Decoration>();
 
-        const textToHighlight = view.state.doc.slice(0).toJSON().join('\n');
-        const results = textToHighlight ? search.find(textToHighlight) : [];
+        // Decorate visible ranges only for performance reasons
+        for (const { from, to } of view.visibleRanges) {
+          const textToHighlight = view.state.sliceDoc(from, to);
+          const results = textToHighlight ? search.find(textToHighlight) : [];
 
-        for (const result of results) {
-          builder.add(result.start, result.end, squigglyUnderline(result));
+          for (const result of results) {
+            // Offset result by the start of the visible range
+            const start = from + result.start;
+            const end = from + result.end;
+
+            // Add the decoration
+            builder.add(start, end, underlineDecoration(start, end, result.matchingWord));
+          }
         }
 
         return builder.finish();
@@ -78,12 +87,10 @@ export const suggestionsExtension = (search: Search): ViewPlugin<PluginValue> =>
             return;
           }
 
-          // Positions of suggested word
-          const { positionStart, positionEnd } = target.dataset;
+          // Extract position and search index word from target element data attributes state
+          const { positionStart, positionEnd, searchWord } = target.dataset;
 
-          // Replace suggested word with a tag
-          const word = view.state.doc.sliceString(+positionStart, +positionEnd);
-          const replaceText = search.getSuggestionReplacement(word);
+          const replaceText = search.getSuggestionReplacement(searchWord);
 
           const popup = new SuggestionsPopup();
           popup.show({
