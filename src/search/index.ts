@@ -23,16 +23,22 @@ export default class Search {
       }
     });
 
-    // Strip out hashtags and links as we don't need to bother searching them
-    const textToHighlight = text
-      .replace(/#+([a-zA-Z0-9_]+)/g, (m) => ' '.repeat(m.length)) // remove hashtags
-      .replace(/\[(.*?)\]+/g, (m) => ' '.repeat(m.length)); // remove links
+    // Redact text that we don't want to be searched
+    const redactedText = this.redactText(text);
 
-    return findAll({ searchWords, textToHighlight })
+    return findAll({ searchWords, textToHighlight: redactedText })
       .filter((chunk) => chunk.highlight)
       .map((chunk) => ({
         ...chunk,
-        matchingWord: textToHighlight.substring(chunk.start, chunk.end),
+        matchingWord: redactedText.substring(chunk.start, chunk.end),
       }));
+  }
+
+  private redactText(text: string): string {
+    return text
+      .replace(/```[\s\S]+?```/g, (m) => ' '.repeat(m.length)) // remove code blocks
+      .replace(/^\n+---[\s\S]+?---/g, (m) => ' '.repeat(m.length)) // remove yaml front matter
+      .replace(/#+([a-zA-Z0-9_]+)/g, (m) => ' '.repeat(m.length)) // remove hashtags
+      .replace(/\[(.*?)\]+/g, (m) => ' '.repeat(m.length)); // remove links
   }
 }
