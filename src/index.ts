@@ -1,13 +1,13 @@
 import { Plugin } from 'obsidian';
+import { Extension } from '@codemirror/state';
 import { suggestionsExtension } from './cmExtension/suggestionsExtension';
-import { ViewPlugin, PluginValue } from '@codemirror/view';
 
 import Search from './search';
 import { Indexer } from './indexing/indexer';
 import { AppHelper } from './app-helper';
 
 export default class TagsAutosuggestPlugin extends Plugin {
-  currentExtension: ViewPlugin<PluginValue>;
+  private editorExtension: Extension[] = [];
 
   public async onload(): Promise<void> {
     console.log('Autosuggest plugin: loading plugin', new Date().toLocaleString());
@@ -15,6 +15,8 @@ export default class TagsAutosuggestPlugin extends Plugin {
     const appHelper = new AppHelper(this.app);
     const indexer = new Indexer(appHelper);
     const search = new Search(indexer);
+
+    this.registerEditorExtension(this.editorExtension);
 
     this.app.workspace.onLayoutReady(() => {
       // Index every time a file is modified
@@ -25,15 +27,17 @@ export default class TagsAutosuggestPlugin extends Plugin {
     });
 
     indexer.on('updated-index', () => {
-      // Unload any existing version of our extension
-      if (this.currentExtension != null) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (this.app.workspace as any).unregisterEditorExtension(this.currentExtension);
-      }
-
-      this.currentExtension = suggestionsExtension(search);
-      this.registerEditorExtension(this.currentExtension);
+      this.updateEditorExtension(suggestionsExtension(search));
     });
+  }
+
+  /**
+   * Ref: https://github.com/obsidianmd/obsidian-releases/blob/master/plugin-review.md#how-to-changereconfigure-your-cm6-extensions
+   */
+  private updateEditorExtension(extension: Extension) {
+    this.editorExtension.length = 0;
+    this.editorExtension.push(extension);
+    this.app.workspace.updateOptions();
   }
 
   public async onunload(): Promise<void> {
