@@ -91,6 +91,9 @@ export const suggestionsExtension = (search: Search): ViewPlugin<PluginValue> =>
           const { positionStart, positionEnd, searchWord } = target.dataset;
 
           const replaceText = search.getSuggestionReplacement(searchWord);
+          if (!replaceText) {
+            return;
+          }
 
           const popup = new SuggestionsPopup();
           popup.show({

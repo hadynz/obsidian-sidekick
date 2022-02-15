@@ -1,5 +1,5 @@
 import { findAll } from 'highlight-words-core';
-import { Indexer } from '../indexing/indexer';
+import { Indexer } from '~/indexing/indexer';
 
 type SearchResult = {
   start: number;
@@ -11,13 +11,13 @@ export default class Search {
   constructor(private indexer: Indexer) {}
 
   public getSuggestionReplacement(text: string): string {
-    return this.indexer.index.find((index) => index.index === text.toLowerCase()).displayText;
+    return this.indexer.index.find((index) => index.index.replace(/\+/g, "\\+") === text.toLowerCase())?.displayText;
   }
 
   public find(text: string): SearchResult[] {
     const searchWords = this.indexer.index.map((index) => {
       try {
-        return index.index;
+        return index.index.replace(/\+/g, "\\+");
       } catch (err) {
         console.error('Cannot return text value of index', index, err);
       }
