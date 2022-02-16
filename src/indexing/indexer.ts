@@ -1,33 +1,24 @@
-import _ from 'lodash';
 import { TFile } from 'obsidian';
 
 import { PageIndex, SearchIndex, TagIndex, AliasIndex } from './indexModels';
 import { AppHelper } from '../app-helper';
 
-export class Indexer {
-  private searchIndex: SearchIndex[] = [];
-  private callbacks: (() => void)[] = [];
+export type Index = {
+  [index: string]: SearchIndex;
+};
 
+export class Indexer {
   constructor(private appHelper: AppHelper) {}
 
-  public get index(): readonly SearchIndex[] {
-    const activeFile = this.appHelper.activeFile;
-    return this.searchIndex.filter((index) => !index.isDefinedInFile(activeFile));
-  }
+  public getIndices(): Index {
+    const exclusionFile = this.appHelper.activeFile;
+    const allFiles = this.appHelper.getAllFiles().filter((file) => file !== exclusionFile);
 
-  public on(_event: 'updated-index', callback: () => void): void {
-    this.callbacks.push(callback);
-  }
-
-  public indexAll(): void {
-    const allFiles = this.appHelper.getAllFiles();
-
-    const fileIndices = allFiles.map((file) => this.indexFile(file)).flat();
-
-    this.searchIndex = [...fileIndices, ...this.indexAllTags(allFiles)];
-
-    // Notify all listeners that the index has been updated
-    this.callbacks.forEach((cb) => cb());
+    return this.indexAllTags(allFiles)
+      .concat(allFiles.map((file) => this.indexFile(file)).flat())
+      .reduce((acc: Index, index) => {
+        return { ...acc, [index.stem]: index };
+      }, {});
   }
 
   private indexFile(file: TFile): SearchIndex[] {
@@ -41,11 +32,9 @@ export class Indexer {
   }
 
   private indexAllTags(files: TFile[]): TagIndex[] {
-    const tagIndices: TagIndex[] = files.reduce((acc, file) => {
+    return files.reduce((acc, file) => {
       const tags = this.appHelper.getTags(file).map((tag) => new TagIndex(tag));
       return [...acc, ...tags];
     }, []);
-
-    return _.uniqBy(tagIndices, (x) => x.index);
   }
 }

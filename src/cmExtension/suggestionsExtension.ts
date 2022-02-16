@@ -16,11 +16,11 @@ import './suggestionsExtension.css';
 
 const SuggestionCandidateClass = 'cm-suggestion-candidate';
 
-const underlineDecoration = (start: number, end: number, word: string) =>
+const underlineDecoration = (start: number, end: number, replaceText: string) =>
   Decoration.mark({
     class: SuggestionCandidateClass,
     attributes: {
-      'data-search-word': word,
+      'data-replace-text': replaceText,
       'data-position-start': `${start}`,
       'data-position-end': `${end}`,
     },
@@ -55,6 +55,7 @@ export const suggestionsExtension = (search: Search): ViewPlugin<PluginValue> =>
       }
 
       private decorateView(view: EditorView): DecorationSet {
+        console.log('Running decoration');
         const builder = new RangeSetBuilder<Decoration>();
 
         // Decorate visible ranges only for performance reasons
@@ -68,7 +69,7 @@ export const suggestionsExtension = (search: Search): ViewPlugin<PluginValue> =>
             const end = from + result.end;
 
             // Add the decoration
-            builder.add(start, end, underlineDecoration(start, end, result.matchingWord));
+            builder.add(start, end, underlineDecoration(start, end, result.replaceText));
           }
         }
 
@@ -87,10 +88,8 @@ export const suggestionsExtension = (search: Search): ViewPlugin<PluginValue> =>
             return;
           }
 
-          // Extract position and search index word from target element data attributes state
-          const { positionStart, positionEnd, searchWord } = target.dataset;
-
-          const replaceText = search.getSuggestionReplacement(searchWord);
+          // Extract position and replacement text from target element data attributes state
+          const { positionStart, positionEnd, replaceText } = target.dataset;
 
           const popup = new SuggestionsPopup();
           popup.show({
