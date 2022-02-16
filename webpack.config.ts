@@ -70,9 +70,8 @@ const config: Configuration = {
   },
   externals: {
     obsidian: 'commonjs2 obsidian',
-    '@codemirror/search': 'commonjs2 @codemirror/search',
-    '@codemirror/state': 'commonjs2 @codemirror/state',
     '@codemirror/view': 'commonjs2 @codemirror/view',
+    '@codemirror/rangeset': 'commonjs2 @codemirror/rangeset',
   },
 };
 

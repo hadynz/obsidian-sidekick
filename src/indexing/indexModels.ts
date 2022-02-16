@@ -1,49 +1,45 @@
 import { TFile } from 'obsidian';
 
+import { stemmer } from '../utils/stemmer';
+
 export interface SearchIndex {
-  index: string;
-  displayText: string;
-  isDefinedInFile: (file: TFile) => boolean;
+  replaceText: string;
+  originalText: string;
+  stem: string;
 }
 
 export class TagIndex implements SearchIndex {
-  public readonly index: string;
-  public readonly displayText: string;
+  public readonly originalText: string;
+  public readonly replaceText: string;
+  public readonly stem: string;
 
   constructor(tag: string) {
-    this.index = tag.toLowerCase().replace(/#/, '');
-    this.displayText = tag;
-  }
-
-  public isDefinedInFile(_file: TFile): boolean {
-    return false;
+    this.originalText = tag.replace(/#/, '');
+    this.replaceText = tag;
+    this.stem = stemmer(this.originalText);
   }
 }
 
 export class AliasIndex implements SearchIndex {
-  public readonly index: string;
-  public readonly displayText: string;
+  public readonly originalText: string;
+  public readonly replaceText: string;
+  public readonly stem: string;
 
-  constructor(private file: TFile, word: string) {
-    this.index = word.toLowerCase();
-    this.displayText = `[[${file.basename}|${word}]]`;
-  }
-
-  public isDefinedInFile(file: TFile): boolean {
-    return file === this.file;
+  constructor(file: TFile, word: string) {
+    this.originalText = word;
+    this.replaceText = `[[${file.basename}|${word}]]`;
+    this.stem = stemmer(this.originalText);
   }
 }
 
 export class PageIndex implements SearchIndex {
-  public readonly index: string;
-  public readonly displayText: string;
+  public readonly originalText: string;
+  public readonly replaceText: string;
+  public readonly stem: string;
 
-  constructor(private file: TFile) {
-    this.index = file.basename.toLowerCase();
-    this.displayText = `[[${file.basename}]]`;
-  }
-
-  public isDefinedInFile(file: TFile): boolean {
-    return file === this.file;
+  constructor(file: TFile) {
+    this.originalText = file.basename;
+    this.replaceText = `[[${file.basename}]]`;
+    this.stem = stemmer(this.originalText);
   }
 }
