@@ -55,7 +55,6 @@ export const suggestionsExtension = (search: Search): ViewPlugin<PluginValue> =>
       }
 
       private decorateView(view: EditorView): DecorationSet {
-        console.log('Running decoration');
         const builder = new RangeSetBuilder<Decoration>();
 
         // Decorate visible ranges only for performance reasons
