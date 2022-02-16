@@ -1,6 +1,7 @@
 .cm-suggestion-candidate {
   position: relative;
   border-bottom: 2px solid var(--interactive-accent);
+  display: inline-block;
 }
 
 .cm-suggestion-candidate::before {
