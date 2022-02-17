@@ -45,8 +45,9 @@ export default class Search {
     const indexHits = results[0].matchData.metadata;
 
     return Object.keys(indexHits)
-      .reduce((acc: SearchResult[], indexHit: string) => {
-        const positions = indexHits[indexHit][DocumentKey].position;
+      .filter((indexHit) => this.existsInIndex(indexHit, indices))
+      .reduce((acc: SearchResult[], indexHit) => {
+        const positions: number[][] = indexHits[indexHit][DocumentKey].position;
 
         const searchResults = positions.map(
           (position): SearchResult => ({
@@ -60,6 +61,19 @@ export default class Search {
         return acc;
       }, [])
       .sort((a, b) => a.start - b.start); // Must sort by start position to prepare for highlighting
+  }
+
+  private existsInIndex(index: string, indices: Index): boolean {
+    const exists = indices[index] != null;
+
+    if (!exists) {
+      console.warn(
+        `Search hit "${index}" was not found in Obsidian index. This could be a bug. Report on https://github.com/hadynz/obsidian-sidekick/issues`,
+        indices
+      );
+    }
+
+    return exists;
   }
 
   private redactText(text: string): string {
