@@ -17,7 +17,7 @@ export class Indexer {
     return this.indexAllTags(allFiles)
       .concat(allFiles.map((file) => this.indexFile(file)).flat())
       .reduce((acc: Index, index) => {
-        return { ...acc, [index.stem]: index };
+        return { ...acc, [index.originalText.toLowerCase()]: index };
       }, {});
   }
 

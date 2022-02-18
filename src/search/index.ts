@@ -1,4 +1,4 @@
-import lunr from 'lunr';
+import { Trie, Emit } from '@tanishiking/aho-corasick';
 
 import { Indexer, Index } from '../indexing/indexer';
 
@@ -8,58 +8,34 @@ type SearchResult = {
   replaceText: string;
 };
 
-// Any arbitrary key to use for the search index
-const DocumentKey = 'text';
-
 export default class Search {
   constructor(private indexer: Indexer) {}
 
   public find(text: string): SearchResult[] {
+    const indices = this.indexer.getIndices();
+
+    const trie = new Trie(Object.keys(indices), {
+      allowOverlaps: false,
+      onlyWholeWords: true,
+      caseInsensitive: true,
+    });
+
     // Redact text that we don't want to be searched
     const redactedText = this.redactText(text);
 
-    const idx = lunr(function () {
-      this.metadataWhitelist = ['position'];
-      this.ref(DocumentKey);
-      this.field(DocumentKey);
-      this.add({ [DocumentKey]: redactedText });
-    });
-
-    const indices = this.indexer.getIndices();
-
-    const results = idx.query(function () {
-      Object.keys(indices).map((index) => {
-        this.term(index, {});
-      });
-    });
+    const results = trie.parseText(redactedText);
 
     return this.toSearchResults(results, indices);
   }
 
-  private toSearchResults(results: lunr.Index.Result[], indices: Index): SearchResult[] {
-    if (results.length === 0) {
-      return [];
-    }
-
-    // We will always ever only have one result as we only index one document
-    const indexHits = results[0].matchData.metadata;
-
-    return Object.keys(indexHits)
-      .filter((indexHit) => this.existsInIndex(indexHit, indices))
-      .reduce((acc: SearchResult[], indexHit) => {
-        const positions: number[][] = indexHits[indexHit][DocumentKey].position;
-
-        const searchResults = positions.map(
-          (position): SearchResult => ({
-            start: position[0],
-            end: position[0] + position[1],
-            replaceText: indices[indexHit].replaceText,
-          })
-        );
-
-        acc.push(...searchResults);
-        return acc;
-      }, [])
+  private toSearchResults(results: Emit[], indices: Index): SearchResult[] {
+    return results
+      .filter((result) => this.existsInIndex(result.keyword, indices))
+      .map((result) => ({
+        start: result.start,
+        end: result.end + 1,
+        replaceText: indices[result.keyword].replaceText,
+      }))
       .sort((a, b) => a.start - b.start); // Must sort by start position to prepare for highlighting
   }
 
