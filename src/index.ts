@@ -1,5 +1,5 @@
 import { Plugin } from 'obsidian';
-import { Extension } from '@codemirror/state';
+import type { Extension } from '@codemirror/state';
 
 import Search from './search';
 import { PluginHelper } from './plugin-helper';
@@ -23,8 +23,13 @@ export default class TagsAutosuggestPlugin extends Plugin {
     pluginHelper.onFileMetadataChanged((file) => indexer.replaceFileIndices(file));
 
     // Re/load highlighting extension after any changes to index
-    indexer.on('indexRebuilt', () => this.updateEditorExtension(suggestionsExtension(search)));
-    indexer.on('indexUpdated', () => this.updateEditorExtension(suggestionsExtension(search)));
+    indexer.on('indexRebuilt', () =>
+      this.updateEditorExtension(suggestionsExtension(search, this.app))
+    );
+
+    indexer.on('indexUpdated', () =>
+      this.updateEditorExtension(suggestionsExtension(search, this.app))
+    );
 
     // Build search index on startup (very expensive process)
     pluginHelper.onLayoutReady(() => indexer.buildIndex());

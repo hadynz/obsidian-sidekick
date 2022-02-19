@@ -3,7 +3,7 @@
   "exclude": ["node_modules/*"],
   "compilerOptions": {
     "target": "es5",
-    "types": ["node", "svelte", "jest"],
+    "types": ["node", "jest"],
     "baseUrl": ".",
     "paths": {
       "src": ["src/*", "tests/*"],
