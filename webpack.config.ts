@@ -62,11 +62,10 @@ const config: Configuration = {
   ],
   resolve: {
     alias: {
-      svelte: path.resolve('node_modules', 'svelte'),
       '~': path.resolve(__dirname, 'src'),
     },
-    extensions: ['.ts', '.tsx', '.js', '.svelte'],
-    mainFields: ['svelte', 'browser', 'module', 'main'],
+    extensions: ['.ts', '.tsx', '.js'],
+    mainFields: ['browser', 'module', 'main'],
   },
   externals: {
     obsidian: 'commonjs2 obsidian',

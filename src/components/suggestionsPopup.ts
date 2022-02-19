@@ -1,36 +1,29 @@
-import tippy from 'tippy.js';
-import 'tippy.js/dist/tippy.css';
+import { App, Menu, MenuItem } from 'obsidian';
 
-import './suggestionsPopup.css';
-
-type SuggestionsPopupProps = {
-  target: HTMLElement;
-  text: string;
-  onClick: () => void;
+type SuggestionsModalProps = {
+  app: App;
+  mouseEvent: MouseEvent;
+  suggestions: string[];
+  onClick: (replaceText: string) => void;
 };
 
-export class SuggestionsPopup {
-  public show(props: SuggestionsPopupProps): void {
-    const { text, onClick, target } = props;
+const item = (icon, title, click) => {
+  return (item: MenuItem) => item.setIcon(icon).setTitle(title).onClick(click);
+};
 
-    const button = document.createElement('button');
-    button.innerText = text;
-    button.title = 'Suggestion';
-    button.onclick = () => {
-      onClick();
-      tippyInstance.hide();
-    };
+export const showSuggestionsModal = (props: SuggestionsModalProps): void => {
+  const { app, mouseEvent, suggestions, onClick } = props;
 
-    const tippyInstance = tippy(target, {
-      content: button,
-      trigger: 'click',
-      theme: 'obsidian',
-      interactive: true,
-      appendTo: document.body,
-      allowHTML: true,
-      onHidden: () => {
-        tippyInstance.destroy();
-      },
-    });
-  }
-}
+  const menu = new Menu(app);
+
+  suggestions.forEach((replaceText) => {
+    menu.addItem(
+      item('pencil', `Replace with ${replaceText}`, () => {
+        onClick(replaceText);
+      })
+    );
+  });
+
+  menu.addSeparator();
+  menu.showAtMouseEvent(mouseEvent);
+};

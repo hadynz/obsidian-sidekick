@@ -7,26 +7,26 @@ import {
   type PluginValue,
 } from '@codemirror/view';
 import { RangeSetBuilder } from '@codemirror/rangeset';
-import { debounce, type Debouncer } from 'obsidian';
+import { App, debounce, type Debouncer } from 'obsidian';
 
+import { showSuggestionsModal } from '../components/suggestionsPopup';
 import type Search from '../search';
-import { SuggestionsPopup } from '../components/suggestionsPopup';
 
 import './suggestionsExtension.css';
 
 const SuggestionCandidateClass = 'cm-suggestion-candidate';
 
-const underlineDecoration = (start: number, end: number, replaceText: string) =>
+const underlineDecoration = (start: number, end: number, keyword: string) =>
   Decoration.mark({
     class: SuggestionCandidateClass,
     attributes: {
-      'data-replace-text': replaceText,
+      'data-keyword': keyword,
       'data-position-start': `${start}`,
       'data-position-end': `${end}`,
     },
   });
 
-export const suggestionsExtension = (search: Search): ViewPlugin<PluginValue> => {
+export const suggestionsExtension = (search: Search, app: App): ViewPlugin<PluginValue> => {
   return ViewPlugin.fromClass(
     class {
       decorations: DecorationSet;
@@ -68,7 +68,7 @@ export const suggestionsExtension = (search: Search): ViewPlugin<PluginValue> =>
             const end = from + result.end;
 
             // Add the decoration
-            builder.add(start, end, underlineDecoration(start, end, result.replaceText));
+            builder.add(start, end, underlineDecoration(start, end, result.keyword));
           }
         }
 
@@ -83,18 +83,20 @@ export const suggestionsExtension = (search: Search): ViewPlugin<PluginValue> =>
           const target = e.target as HTMLElement;
           const isCandidate = target.classList.contains(SuggestionCandidateClass);
 
-          if (!isCandidate) {
+          // Do nothing if user right-clicked or unrelated DOM element was clicked
+          if (!isCandidate || e.button !== 0) {
             return;
           }
 
           // Extract position and replacement text from target element data attributes state
-          const { positionStart, positionEnd, replaceText } = target.dataset;
+          const { positionStart, positionEnd, keyword } = target.dataset;
 
-          const popup = new SuggestionsPopup();
-          popup.show({
-            target,
-            text: replaceText,
-            onClick: () => {
+          // Show suggestions modal
+          showSuggestionsModal({
+            app,
+            mouseEvent: e,
+            suggestions: search.getReplacementSuggestions(keyword),
+            onClick: (replaceText) => {
               view.dispatch({
                 changes: {
                   from: +positionStart,

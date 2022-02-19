@@ -1,3 +1,4 @@
+import _ from 'lodash';
 import { Trie, Emit } from '@tanishiking/aho-corasick';
 
 import type { Indexer } from '../indexing/indexer';
@@ -5,11 +6,20 @@ import type { Indexer } from '../indexing/indexer';
 type SearchResult = {
   start: number;
   end: number;
-  replaceText: string;
+  keyword: string;
+};
+
+const isEqual = (a: Emit, b: Emit) => {
+  return a.start === b.start && a.keyword === b.keyword;
 };
 
 export default class Search {
   constructor(private indexer: Indexer) {}
+
+  public getReplacementSuggestions(keyword: string): string[] {
+    const keywords = this.indexer.getDocumentsByKeyword(keyword).map((doc) => doc.replaceText);
+    return _.uniq(keywords);
+  }
 
   public find(text: string): SearchResult[] {
     const keywords = this.indexer.getKeywords();
@@ -28,12 +38,12 @@ export default class Search {
   }
 
   private mapToSearchResults(results: Emit[]): SearchResult[] {
-    return results
+    return _.uniqWith(results, isEqual)
       .filter((result) => this.keywordExistsInIndex(result.keyword))
       .map((result) => ({
         start: result.start,
         end: result.end + 1,
-        replaceText: this.indexer.getDocumentsByKeyword(result.keyword)[0].replaceText,
+        keyword: result.keyword,
       }))
       .sort((a, b) => a.start - b.start); // Must sort by start position to prepare for highlighting
   }

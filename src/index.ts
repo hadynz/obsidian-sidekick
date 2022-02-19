@@ -23,8 +23,13 @@ export default class TagsAutosuggestPlugin extends Plugin {
     pluginHelper.onFileMetadataChanged((file) => indexer.replaceFileIndices(file));
 
     // Re/load highlighting extension after any changes to index
-    indexer.on('indexRebuilt', () => this.updateEditorExtension(suggestionsExtension(search)));
-    indexer.on('indexUpdated', () => this.updateEditorExtension(suggestionsExtension(search)));
+    indexer.on('indexRebuilt', () =>
+      this.updateEditorExtension(suggestionsExtension(search, this.app))
+    );
+
+    indexer.on('indexUpdated', () =>
+      this.updateEditorExtension(suggestionsExtension(search, this.app))
+    );
 
     // Build search index on startup (very expensive process)
     pluginHelper.onLayoutReady(() => indexer.buildIndex());
