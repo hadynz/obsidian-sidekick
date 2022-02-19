@@ -1,8 +1,8 @@
 import lokijs from 'lokijs';
 import { TypedEmitter } from 'tiny-typed-emitter';
-import { TFile } from 'obsidian';
+import type { TFile } from 'obsidian';
 
-import { PluginHelper } from '../plugin-helper';
+import type { PluginHelper } from '../plugin-helper';
 
 type Document = {
   fileCreationTime: number;

@@ -1,6 +1,6 @@
 import { Trie, Emit } from '@tanishiking/aho-corasick';
 
-import { Indexer } from '../indexing/indexer';
+import type { Indexer } from '../indexing/indexer';
 
 type SearchResult = {
   start: number;

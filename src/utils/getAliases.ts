@@ -1,4 +1,4 @@
-import { CachedMetadata } from 'obsidian';
+import type { CachedMetadata } from 'obsidian';
 
 export const getAliases = (metadata: CachedMetadata): string[] => {
   const frontmatterAliases = metadata?.frontmatter?.['aliases'];

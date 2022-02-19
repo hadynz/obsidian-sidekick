@@ -1,5 +1,5 @@
 import { Plugin } from 'obsidian';
-import { Extension } from '@codemirror/state';
+import type { Extension } from '@codemirror/state';
 
 import Search from './search';
 import { PluginHelper } from './plugin-helper';

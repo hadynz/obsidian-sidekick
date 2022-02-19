@@ -1,15 +1,15 @@
 import {
   Decoration,
-  DecorationSet,
   EditorView,
   ViewPlugin,
   ViewUpdate,
-  PluginValue,
+  type DecorationSet,
+  type PluginValue,
 } from '@codemirror/view';
 import { RangeSetBuilder } from '@codemirror/rangeset';
-import { debounce, Debouncer } from 'obsidian';
+import { debounce, type Debouncer } from 'obsidian';
 
-import Search from '../search';
+import type Search from '../search';
 import { SuggestionsPopup } from '../components/suggestionsPopup';
 
 import './suggestionsExtension.css';
