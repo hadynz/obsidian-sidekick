@@ -1,40 +1,86 @@
+import lokijs from 'lokijs';
+import { TypedEmitter } from 'tiny-typed-emitter';
 import { TFile } from 'obsidian';
 
-import { PageIndex, SearchIndex, TagIndex, AliasIndex } from './indexModels';
-import { AppHelper } from '../app-helper';
+import { PluginHelper } from '../plugin-helper';
 
-export type Index = {
-  [index: string]: SearchIndex;
+type Document = {
+  fileCreationTime: number;
+  type: 'tag' | 'alias' | 'page';
+  keyword: string;
+  replaceText: string;
 };
 
-export class Indexer {
-  constructor(private appHelper: AppHelper) {}
+interface IndexerEvents {
+  indexRebuilt: () => void;
+  indexUpdated: () => void;
+}
 
-  public getIndices(): Index {
-    const exclusionFile = this.appHelper.activeFile;
-    const allFiles = this.appHelper.getAllFiles().filter((file) => file !== exclusionFile);
+export class Indexer extends TypedEmitter<IndexerEvents> {
+  private documents: Collection<Document>;
 
-    return this.indexAllTags(allFiles)
-      .concat(allFiles.map((file) => this.indexFile(file)).flat())
-      .reduce((acc: Index, index) => {
-        return { ...acc, [index.originalText.toLowerCase()]: index };
-      }, {});
+  constructor(private pluginHelper: PluginHelper) {
+    super();
+
+    const db = new lokijs('sidekick');
+
+    this.documents = db.addCollection<Document>('documents', {
+      indices: ['fileCreationTime', 'keyword'],
+    });
   }
 
-  private indexFile(file: TFile): SearchIndex[] {
-    const pageIndex = new PageIndex(file);
+  public getKeywords(): string[] {
+    // Exclude any keywords associated with active file as we don't want recursive highlighting
+    const exclusionFile = this.pluginHelper.activeFile;
 
-    const aliasIndices = this.appHelper
-      .getAliases(file)
-      .map((alias) => new AliasIndex(file, alias));
-
-    return [pageIndex, ...aliasIndices];
+    return this.documents
+      .where((doc) => doc.fileCreationTime !== exclusionFile.stat.ctime)
+      .map((doc) => doc.keyword);
   }
 
-  private indexAllTags(files: TFile[]): TagIndex[] {
-    return files.reduce((acc, file) => {
-      const tags = this.appHelper.getTags(file).map((tag) => new TagIndex(tag));
-      return [...acc, ...tags];
-    }, []);
+  public getDocumentsByKeyword(keyword: string): Document[] {
+    return this.documents.find({ keyword: keyword });
+  }
+
+  public buildIndex(): void {
+    this.pluginHelper.getAllFiles().forEach((file) => this.indexFile(file));
+    this.emit('indexRebuilt');
+  }
+
+  public replaceFileIndices(file: TFile): void {
+    // Remove all indices related to modified file
+    this.documents.findAndRemove({ fileCreationTime: file.stat.ctime });
+
+    // Re-index modified file
+    this.indexFile(file);
+
+    this.emit('indexUpdated');
+  }
+
+  private indexFile(file: TFile): void {
+    this.documents.insert({
+      fileCreationTime: file.stat.ctime,
+      type: 'page',
+      keyword: file.basename.toLowerCase(),
+      replaceText: `[[${file.basename}]]`,
+    });
+
+    this.pluginHelper.getAliases(file).forEach((alias) => {
+      this.documents.insert({
+        fileCreationTime: file.stat.ctime,
+        type: 'alias',
+        keyword: alias.toLowerCase(),
+        replaceText: `[[${file.basename}|${alias}]]`,
+      });
+    });
+
+    this.pluginHelper.getTags(file).forEach((tag) => {
+      this.documents.insert({
+        fileCreationTime: file.stat.ctime,
+        type: 'tag',
+        keyword: tag.replace(/#/, '').toLowerCase(),
+        replaceText: tag,
+      });
+    });
   }
 }
