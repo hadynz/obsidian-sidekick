@@ -14,7 +14,6 @@ export default class TagsAutosuggestPlugin extends Plugin {
 
     const pluginHelper = new PluginHelper(this);
     const indexer = new Indexer(pluginHelper);
-    const search = new Search(indexer);
 
     this.registerEditorExtension(this.editorExtension);
 
@@ -23,13 +22,15 @@ export default class TagsAutosuggestPlugin extends Plugin {
     pluginHelper.onFileMetadataChanged((file) => indexer.replaceFileIndices(file));
 
     // Re/load highlighting extension after any changes to index
-    indexer.on('indexRebuilt', () =>
-      this.updateEditorExtension(suggestionsExtension(search, this.app))
-    );
+    indexer.on('indexRebuilt', () => {
+      const search = new Search(indexer);
+      this.updateEditorExtension(suggestionsExtension(search, this.app));
+    });
 
-    indexer.on('indexUpdated', () =>
-      this.updateEditorExtension(suggestionsExtension(search, this.app))
-    );
+    indexer.on('indexUpdated', () => {
+      const search = new Search(indexer);
+      this.updateEditorExtension(suggestionsExtension(search, this.app));
+    });
 
     // Build search index on startup (very expensive process)
     pluginHelper.onLayoutReady(() => indexer.buildIndex());

@@ -2,11 +2,12 @@ import lokijs from 'lokijs';
 import { TypedEmitter } from 'tiny-typed-emitter';
 import type { TFile } from 'obsidian';
 
+import { tokenize } from './utils';
 import type { PluginHelper } from '../plugin-helper';
 
 type Document = {
   fileCreationTime: number;
-  type: 'tag' | 'alias' | 'page';
+  type: 'tag' | 'alias' | 'page' | 'page-token';
   keyword: string;
   replaceText: string;
 };
@@ -63,6 +64,15 @@ export class Indexer extends TypedEmitter<IndexerEvents> {
       type: 'page',
       keyword: file.basename.toLowerCase(),
       replaceText: `[[${file.basename}]]`,
+    });
+
+    tokenize(file.basename).forEach((token) => {
+      this.documents.insert({
+        fileCreationTime: file.stat.ctime,
+        type: 'page-token',
+        keyword: token,
+        replaceText: `[[${file.basename}]]`,
+      });
     });
 
     this.pluginHelper.getAliases(file).forEach((alias) => {

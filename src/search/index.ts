@@ -14,7 +14,18 @@ const isEqual = (a: Emit, b: Emit) => {
 };
 
 export default class Search {
-  constructor(private indexer: Indexer) {}
+  private trie: Trie;
+
+  constructor(private indexer: Indexer) {
+    const keywords = this.indexer.getKeywords();
+
+    // Generating the Trie is expensive, so we only do it once
+    this.trie = new Trie(keywords, {
+      allowOverlaps: false,
+      onlyWholeWords: true,
+      caseInsensitive: true,
+    });
+  }
 
   public getReplacementSuggestions(keyword: string): string[] {
     const keywords = this.indexer.getDocumentsByKeyword(keyword).map((doc) => doc.replaceText);
@@ -22,17 +33,9 @@ export default class Search {
   }
 
   public find(text: string): SearchResult[] {
-    const keywords = this.indexer.getKeywords();
-
-    const trie = new Trie(keywords, {
-      allowOverlaps: false,
-      onlyWholeWords: true,
-      caseInsensitive: true,
-    });
-
     const redactedText = this.redactText(text); // Redact text that we don't want to be searched
 
-    const results = trie.parseText(redactedText);
+    const results = this.trie.parseText(redactedText);
 
     return this.mapToSearchResults(results);
   }

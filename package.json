@@ -1,6 +1,6 @@
 {
   "name": "obsidian-sidekick",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "A companion to identify hidden connections that match your tags and pages",
   "main": "src/index.ts",
   "repository": {
@@ -23,7 +23,7 @@
     "prettier": "prettier --write '**/*.{ts,js,css,html}'",
     "lint": "tsc --noemit && eslint . --ext .ts",
     "clean": "rimraf dist main.js*",
-    "test": "jest --passWithNoTests",
+    "test": "jest --passWithNoTests --verbose",
     "test-watch": "jest --watch",
     "dev": "NODE_ENV=development webpack && cp ./dist/main.js* .",
     "build": "NODE_ENV=production webpack",
@@ -70,8 +70,10 @@
   },
   "dependencies": {
     "@tanishiking/aho-corasick": "^0.0.1",
+    "@types/natural": "^5.1.0",
     "lodash": "^4.17.21",
     "lokijs": "^1.5.12",
+    "natural": "^5.1.13",
     "tiny-typed-emitter": "^2.1.0"
   }
 }
