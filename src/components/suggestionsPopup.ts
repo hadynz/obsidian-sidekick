@@ -14,16 +14,18 @@ const item = (icon, title, click) => {
 export const showSuggestionsModal = (props: SuggestionsModalProps): void => {
   const { app, mouseEvent, suggestions, onClick } = props;
 
-  const menu = new Menu(app);
+  setTimeout(() => {
+    const menu = new Menu(app);
 
-  suggestions.forEach((replaceText) => {
-    menu.addItem(
-      item('pencil', `Replace with ${replaceText}`, () => {
-        onClick(replaceText);
-      })
-    );
-  });
+    suggestions.forEach((replaceText) => {
+      menu.addItem(
+        item('pencil', `Replace with ${replaceText}`, () => {
+          onClick(replaceText);
+        })
+      );
+    });
 
-  menu.addSeparator();
-  menu.showAtMouseEvent(mouseEvent);
+    menu.addSeparator();
+    menu.showAtMouseEvent(mouseEvent);
+  }, 100);
 };
