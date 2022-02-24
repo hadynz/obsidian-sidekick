@@ -1,6 +1,7 @@
 import _ from 'lodash';
 import { Trie, Emit } from '@tanishiking/aho-corasick';
 
+import { redactText } from './search.utils';
 import type { Indexer } from '../indexing/indexer';
 
 import { tokenizeText, stemTokens, mapStemmedEmitsToOriginal } from '../indexing/utils';
@@ -35,7 +36,7 @@ export default class Search {
   }
 
   public find(text: string): SearchResult[] {
-    const redactedText = this.redactText(text); // Redact text that we don't want to be searched
+    const redactedText = redactText(text); // Redact text that we don't want to be searched
 
     console.log('redactedText');
     console.log(redactedText);
@@ -84,13 +85,5 @@ export default class Search {
     }
 
     return exists;
-  }
-
-  private redactText(text: string): string {
-    return text
-      .replace(/```[\s\S]+?```/g, (m) => ' '.repeat(m.length)) // remove code blocks
-      .replace(/^\n*?---[\s\S]+?---/g, (m) => ' '.repeat(m.length)) // remove yaml front matter
-      .replace(/#+([a-zA-Z0-9_]+)/g, (m) => ' '.repeat(m.length)) // remove hashtags
-      .replace(/\[(.*?)\]+/g, (m) => ' '.repeat(m.length)); // remove links
   }
 }
