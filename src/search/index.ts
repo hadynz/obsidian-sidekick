@@ -3,6 +3,8 @@ import { Trie, Emit } from '@tanishiking/aho-corasick';
 
 import type { Indexer } from '../indexing/indexer';
 
+import { tokenizeText, stemTokens, mapStemmedEmitsToOriginal } from '../indexing/utils';
+
 type SearchResult = {
   start: number;
   end: number;
@@ -35,9 +37,29 @@ export default class Search {
   public find(text: string): SearchResult[] {
     const redactedText = this.redactText(text); // Redact text that we don't want to be searched
 
-    const results = this.trie.parseText(redactedText);
+    console.log('redactedText');
+    console.log(redactedText);
 
-    return this.mapToSearchResults(results);
+    // Stem the text
+    const stemmedTokens = stemTokens(tokenizeText(redactedText));
+    const stemmedText = stemmedTokens.map((t) => t.stem).join('');
+
+    console.log('stemmedText');
+    console.log(stemmedText);
+
+    // Search stemmed text
+    const stemmedResults = this.trie.parseText(stemmedText);
+
+    console.log('stemmedResults');
+    console.log(stemmedResults);
+
+    // Map stemmed results to original text
+    const originalResults = mapStemmedEmitsToOriginal(stemmedTokens, stemmedResults);
+
+    console.log('originalResults');
+    console.log(originalResults);
+
+    return this.mapToSearchResults(originalResults);
   }
 
   private mapToSearchResults(results: Emit[]): SearchResult[] {

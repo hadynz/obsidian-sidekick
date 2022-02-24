@@ -69,6 +69,7 @@
     "*.{js,css,md}": "prettier --write"
   },
   "dependencies": {
+    "@liquicode/lib-tokenize": "^0.1.4",
     "@tanishiking/aho-corasick": "^0.0.1",
     "@types/natural": "^5.1.0",
     "lodash": "^4.17.21",

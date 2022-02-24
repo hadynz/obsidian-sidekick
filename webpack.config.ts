@@ -72,6 +72,7 @@ const config: Configuration = {
     '@codemirror/view': 'commonjs2 @codemirror/view',
     '@codemirror/state': 'commonjs2 @codemirror/state',
     '@codemirror/rangeset': 'commonjs2 @codemirror/rangeset',
+    'webworker-threads': 'require(webworker-threads)',
   },
 };
 

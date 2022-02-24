@@ -1,14 +1,16 @@
+import _ from 'lodash';
 import lokijs from 'lokijs';
 import { TypedEmitter } from 'tiny-typed-emitter';
 import type { TFile } from 'obsidian';
 
-import { tokenize } from './utils';
+import { tokenizeWithStem } from './utils';
 import type { PluginHelper } from '../plugin-helper';
 
 type Document = {
   fileCreationTime: number;
   type: 'tag' | 'alias' | 'page' | 'page-token';
   keyword: string;
+  originalText: string;
   replaceText: string;
 };
 
@@ -34,9 +36,11 @@ export class Indexer extends TypedEmitter<IndexerEvents> {
     // Exclude any keywords associated with active file as we don't want recursive highlighting
     const exclusionFile = this.pluginHelper.activeFile;
 
-    return this.documents
+    const keywords = this.documents
       .where((doc) => doc.fileCreationTime !== exclusionFile.stat.ctime)
       .map((doc) => doc.keyword);
+
+    return _.uniq(keywords);
   }
 
   public getDocumentsByKeyword(keyword: string): Document[] {
@@ -45,6 +49,7 @@ export class Indexer extends TypedEmitter<IndexerEvents> {
 
   public buildIndex(): void {
     this.pluginHelper.getAllFiles().forEach((file) => this.indexFile(file));
+    console.log('index has been built', this.documents);
     this.emit('indexRebuilt');
   }
 
@@ -63,14 +68,16 @@ export class Indexer extends TypedEmitter<IndexerEvents> {
       fileCreationTime: file.stat.ctime,
       type: 'page',
       keyword: file.basename.toLowerCase(),
+      originalText: file.basename,
       replaceText: `[[${file.basename}]]`,
     });
 
-    tokenize(file.basename).forEach((token) => {
+    tokenizeWithStem(file.basename).forEach((token) => {
       this.documents.insert({
         fileCreationTime: file.stat.ctime,
         type: 'page-token',
         keyword: token,
+        originalText: file.basename,
         replaceText: `[[${file.basename}]]`,
       });
     });
@@ -80,6 +87,7 @@ export class Indexer extends TypedEmitter<IndexerEvents> {
         fileCreationTime: file.stat.ctime,
         type: 'alias',
         keyword: alias.toLowerCase(),
+        originalText: file.basename,
         replaceText: `[[${file.basename}|${alias}]]`,
       });
     });
@@ -89,6 +97,7 @@ export class Indexer extends TypedEmitter<IndexerEvents> {
         fileCreationTime: file.stat.ctime,
         type: 'tag',
         keyword: tag.replace(/#/, '').toLowerCase(),
+        originalText: tag,
         replaceText: tag,
       });
     });
