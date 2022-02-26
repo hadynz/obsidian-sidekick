@@ -1,19 +1,22 @@
 import _ from 'lodash';
-import { Trie, Emit } from '@tanishiking/aho-corasick';
+import { Trie } from '@tanishiking/aho-corasick';
 
-import { redactText } from './search.utils';
 import type { Indexer } from '../indexing/indexer';
+import { redactText } from './redactText';
+import { mapStemToOriginalText } from './mapStemToOriginalText';
+import { WordPunctStemTokenizer } from '../tokenizers';
 
-import { tokenizeText, stemTokens, mapStemmedEmitsToOriginal } from '../indexing/utils';
+const tokenizer = new WordPunctStemTokenizer();
 
-type SearchResult = {
+export type SearchResult = {
   start: number;
   end: number;
-  keyword: string;
+  indexKeyword: string;
+  originalKeyword: string;
 };
 
-const isEqual = (a: Emit, b: Emit) => {
-  return a.start === b.start && a.keyword === b.keyword;
+const isEqual = (a: SearchResult, b: SearchResult) => {
+  return a.start === b.start && a.indexKeyword === b.indexKeyword;
 };
 
 export default class Search {
@@ -38,40 +41,20 @@ export default class Search {
   public find(text: string): SearchResult[] {
     const redactedText = redactText(text); // Redact text that we don't want to be searched
 
-    console.log('redactedText');
-    console.log(redactedText);
-
     // Stem the text
-    const stemmedTokens = stemTokens(tokenizeText(redactedText));
-    const stemmedText = stemmedTokens.map((t) => t.stem).join('');
-
-    console.log('stemmedText');
-    console.log(stemmedText);
+    const tokens = tokenizer.tokenize(redactedText);
+    const stemmedText = tokens.map((t) => t.stem).join('');
 
     // Search stemmed text
-    const stemmedResults = this.trie.parseText(stemmedText);
-
-    console.log('stemmedResults');
-    console.log(stemmedResults);
+    const emits = this.trie.parseText(stemmedText);
 
     // Map stemmed results to original text
-    const originalResults = mapStemmedEmitsToOriginal(stemmedTokens, stemmedResults);
-
-    console.log('originalResults');
-    console.log(originalResults);
-
-    return this.mapToSearchResults(originalResults);
-  }
-
-  private mapToSearchResults(results: Emit[]): SearchResult[] {
-    return _.uniqWith(results, isEqual)
-      .filter((result) => this.keywordExistsInIndex(result.keyword))
-      .map((result) => ({
-        start: result.start,
-        end: result.end + 1,
-        keyword: result.keyword,
-      }))
-      .sort((a, b) => a.start - b.start); // Must sort by start position to prepare for highlighting
+    return _.chain(emits)
+      .map((emit) => mapStemToOriginalText(emit, tokens))
+      .uniqWith(isEqual)
+      .filter((result) => this.keywordExistsInIndex(result.indexKeyword))
+      .sort((a, b) => a.start - b.start) // Must sort by start position to prepare for highlighting
+      .value();
   }
 
   private keywordExistsInIndex(index: string): boolean {

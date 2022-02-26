@@ -16,11 +16,11 @@ import './suggestionsExtension.css';
 
 const SuggestionCandidateClass = 'cm-suggestion-candidate';
 
-const underlineDecoration = (start: number, end: number, keyword: string) =>
+const underlineDecoration = (start: number, end: number, indexKeyword: string) =>
   Decoration.mark({
     class: SuggestionCandidateClass,
     attributes: {
-      'data-keyword': keyword,
+      'data-index-keyword': indexKeyword,
       'data-position-start': `${start}`,
       'data-position-end': `${end}`,
     },
@@ -68,7 +68,7 @@ export const suggestionsExtension = (search: Search, app: App): ViewPlugin<Plugi
             const end = from + result.end;
 
             // Add the decoration
-            builder.add(start, end, underlineDecoration(start, end, result.keyword));
+            builder.add(start, end, underlineDecoration(start, end, result.indexKeyword));
           }
         }
 
@@ -89,13 +89,13 @@ export const suggestionsExtension = (search: Search, app: App): ViewPlugin<Plugi
           }
 
           // Extract position and replacement text from target element data attributes state
-          const { positionStart, positionEnd, keyword } = target.dataset;
+          const { positionStart, positionEnd, indexKeyword } = target.dataset;
 
           // Show suggestions modal
           showSuggestionsModal({
             app,
             mouseEvent: e,
-            suggestions: search.getReplacementSuggestions(keyword),
+            suggestions: search.getReplacementSuggestions(indexKeyword),
             onClick: (replaceText) => {
               view.dispatch({
                 changes: {

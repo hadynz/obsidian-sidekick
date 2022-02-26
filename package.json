@@ -1,6 +1,6 @@
 {
   "name": "obsidian-sidekick",
-  "version": "1.4.3",
+  "version": "1.5.0",
   "description": "A companion to identify hidden connections that match your tags and pages",
   "main": "src/index.ts",
   "repository": {

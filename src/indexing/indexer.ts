@@ -3,7 +3,8 @@ import lokijs from 'lokijs';
 import { TypedEmitter } from 'tiny-typed-emitter';
 import type { TFile } from 'obsidian';
 
-import { tokenizeWithStem } from './utils';
+import { stemPhrase } from '../stemmers';
+import { WordPermutationsTokenizer } from '../tokenizers';
 import type { PluginHelper } from '../plugin-helper';
 
 type Document = {
@@ -21,6 +22,7 @@ interface IndexerEvents {
 
 export class Indexer extends TypedEmitter<IndexerEvents> {
   private documents: Collection<Document>;
+  private permutationTokenizer: WordPermutationsTokenizer;
 
   constructor(private pluginHelper: PluginHelper) {
     super();
@@ -30,6 +32,8 @@ export class Indexer extends TypedEmitter<IndexerEvents> {
     this.documents = db.addCollection<Document>('documents', {
       indices: ['fileCreationTime', 'keyword'],
     });
+
+    this.permutationTokenizer = new WordPermutationsTokenizer();
   }
 
   public getKeywords(): string[] {
@@ -49,7 +53,6 @@ export class Indexer extends TypedEmitter<IndexerEvents> {
 
   public buildIndex(): void {
     this.pluginHelper.getAllFiles().forEach((file) => this.indexFile(file));
-    console.log('index has been built', this.documents);
     this.emit('indexRebuilt');
   }
 
@@ -67,12 +70,12 @@ export class Indexer extends TypedEmitter<IndexerEvents> {
     this.documents.insert({
       fileCreationTime: file.stat.ctime,
       type: 'page',
-      keyword: file.basename.toLowerCase(),
+      keyword: stemPhrase(file.basename),
       originalText: file.basename,
       replaceText: `[[${file.basename}]]`,
     });
 
-    tokenizeWithStem(file.basename).forEach((token) => {
+    this.permutationTokenizer.tokenize(file.basename).forEach((token) => {
       this.documents.insert({
         fileCreationTime: file.stat.ctime,
         type: 'page-token',
