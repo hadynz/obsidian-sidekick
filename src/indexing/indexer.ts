@@ -1,14 +1,17 @@
+import _ from 'lodash';
 import lokijs from 'lokijs';
 import { TypedEmitter } from 'tiny-typed-emitter';
 import type { TFile } from 'obsidian';
 
-import { tokenize } from './utils';
+import { stemPhrase } from '../stemmers';
+import { WordPermutationsTokenizer } from '../tokenizers';
 import type { PluginHelper } from '../plugin-helper';
 
 type Document = {
   fileCreationTime: number;
   type: 'tag' | 'alias' | 'page' | 'page-token';
   keyword: string;
+  originalText: string;
   replaceText: string;
 };
 
@@ -19,6 +22,7 @@ interface IndexerEvents {
 
 export class Indexer extends TypedEmitter<IndexerEvents> {
   private documents: Collection<Document>;
+  private permutationTokenizer: WordPermutationsTokenizer;
 
   constructor(private pluginHelper: PluginHelper) {
     super();
@@ -28,15 +32,19 @@ export class Indexer extends TypedEmitter<IndexerEvents> {
     this.documents = db.addCollection<Document>('documents', {
       indices: ['fileCreationTime', 'keyword'],
     });
+
+    this.permutationTokenizer = new WordPermutationsTokenizer();
   }
 
   public getKeywords(): string[] {
     // Exclude any keywords associated with active file as we don't want recursive highlighting
     const exclusionFile = this.pluginHelper.activeFile;
 
-    return this.documents
+    const keywords = this.documents
       .where((doc) => doc.fileCreationTime !== exclusionFile.stat.ctime)
       .map((doc) => doc.keyword);
+
+    return _.uniq(keywords);
   }
 
   public getDocumentsByKeyword(keyword: string): Document[] {
@@ -62,15 +70,17 @@ export class Indexer extends TypedEmitter<IndexerEvents> {
     this.documents.insert({
       fileCreationTime: file.stat.ctime,
       type: 'page',
-      keyword: file.basename.toLowerCase(),
+      keyword: stemPhrase(file.basename),
+      originalText: file.basename,
       replaceText: `[[${file.basename}]]`,
     });
 
-    tokenize(file.basename).forEach((token) => {
+    this.permutationTokenizer.tokenize(file.basename).forEach((token) => {
       this.documents.insert({
         fileCreationTime: file.stat.ctime,
         type: 'page-token',
         keyword: token,
+        originalText: file.basename,
         replaceText: `[[${file.basename}]]`,
       });
     });
@@ -80,6 +90,7 @@ export class Indexer extends TypedEmitter<IndexerEvents> {
         fileCreationTime: file.stat.ctime,
         type: 'alias',
         keyword: alias.toLowerCase(),
+        originalText: file.basename,
         replaceText: `[[${file.basename}|${alias}]]`,
       });
     });
@@ -89,6 +100,7 @@ export class Indexer extends TypedEmitter<IndexerEvents> {
         fileCreationTime: file.stat.ctime,
         type: 'tag',
         keyword: tag.replace(/#/, '').toLowerCase(),
+        originalText: tag,
         replaceText: tag,
       });
     });

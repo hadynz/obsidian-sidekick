@@ -1,4 +1,4 @@
-import { redactText } from './search.utils';
+import { redactText } from './redactText';
 
 describe('redactText', () => {
   it('Hashtags are redacted', () => {
