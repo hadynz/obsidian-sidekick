@@ -37,18 +37,20 @@ export class Indexer extends TypedEmitter<IndexerEvents> {
   }
 
   public getKeywords(): string[] {
-    // Exclude any keywords associated with active file as we don't want recursive highlighting
-    const exclusionFile = this.pluginHelper.activeFile;
-
     const keywords = this.documents
-      .where((doc) => doc.fileCreationTime !== exclusionFile.stat.ctime)
+      .find({
+        fileCreationTime: { $ne: this.pluginHelper.activeFile.stat.ctime }, // Always exclude indices related to active file
+      })
       .map((doc) => doc.keyword);
 
     return _.uniq(keywords);
   }
 
   public getDocumentsByKeyword(keyword: string): Document[] {
-    return this.documents.find({ keyword: keyword });
+    return this.documents.find({
+      keyword,
+      fileCreationTime: { $ne: this.pluginHelper.activeFile.stat.ctime }, // Always exclude indices related to active file
+    });
   }
 
   public buildIndex(): void {
