@@ -1,4 +1,4 @@
-import { CachedMetadata, FrontMatterCache } from 'obsidian';
+import type { CachedMetadata, FrontMatterCache } from 'obsidian';
 
 import { getAliases } from './getAliases';
 

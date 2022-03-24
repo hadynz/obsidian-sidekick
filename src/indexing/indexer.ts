@@ -1,40 +1,110 @@
-import { TFile } from 'obsidian';
+import _ from 'lodash';
+import lokijs from 'lokijs';
+import { TypedEmitter } from 'tiny-typed-emitter';
+import type { TFile } from 'obsidian';
 
-import { PageIndex, SearchIndex, TagIndex, AliasIndex } from './indexModels';
-import { AppHelper } from '../app-helper';
+import { stemPhrase } from '../stemmers';
+import { WordPermutationsTokenizer } from '../tokenizers';
+import type { PluginHelper } from '../plugin-helper';
 
-export type Index = {
-  [index: string]: SearchIndex;
+type Document = {
+  fileCreationTime: number;
+  type: 'tag' | 'alias' | 'page' | 'page-token';
+  keyword: string;
+  originalText: string;
+  replaceText: string;
 };
 
-export class Indexer {
-  constructor(private appHelper: AppHelper) {}
+interface IndexerEvents {
+  indexRebuilt: () => void;
+  indexUpdated: () => void;
+}
 
-  public getIndices(): Index {
-    const exclusionFile = this.appHelper.activeFile;
-    const allFiles = this.appHelper.getAllFiles().filter((file) => file !== exclusionFile);
+export class Indexer extends TypedEmitter<IndexerEvents> {
+  private documents: Collection<Document>;
+  private permutationTokenizer: WordPermutationsTokenizer;
 
-    return this.indexAllTags(allFiles)
-      .concat(allFiles.map((file) => this.indexFile(file)).flat())
-      .reduce((acc: Index, index) => {
-        return { ...acc, [index.stem]: index };
-      }, {});
+  constructor(private pluginHelper: PluginHelper) {
+    super();
+
+    const db = new lokijs('sidekick');
+
+    this.documents = db.addCollection<Document>('documents', {
+      indices: ['fileCreationTime', 'keyword'],
+    });
+
+    this.permutationTokenizer = new WordPermutationsTokenizer();
   }
 
-  private indexFile(file: TFile): SearchIndex[] {
-    const pageIndex = new PageIndex(file);
+  public getKeywords(): string[] {
+    const keywords = this.documents
+      .find({
+        fileCreationTime: { $ne: this.pluginHelper.activeFile.stat.ctime }, // Always exclude indices related to active file
+      })
+      .map((doc) => doc.keyword);
 
-    const aliasIndices = this.appHelper
-      .getAliases(file)
-      .map((alias) => new AliasIndex(file, alias));
-
-    return [pageIndex, ...aliasIndices];
+    return _.uniq(keywords);
   }
 
-  private indexAllTags(files: TFile[]): TagIndex[] {
-    return files.reduce((acc, file) => {
-      const tags = this.appHelper.getTags(file).map((tag) => new TagIndex(tag));
-      return [...acc, ...tags];
-    }, []);
+  public getDocumentsByKeyword(keyword: string): Document[] {
+    return this.documents.find({
+      keyword,
+      fileCreationTime: { $ne: this.pluginHelper.activeFile.stat.ctime }, // Always exclude indices related to active file
+    });
+  }
+
+  public buildIndex(): void {
+    this.pluginHelper.getAllFiles().forEach((file) => this.indexFile(file));
+    this.emit('indexRebuilt');
+  }
+
+  public replaceFileIndices(file: TFile): void {
+    // Remove all indices related to modified file
+    this.documents.findAndRemove({ fileCreationTime: file.stat.ctime });
+
+    // Re-index modified file
+    this.indexFile(file);
+
+    this.emit('indexUpdated');
+  }
+
+  private indexFile(file: TFile): void {
+    this.documents.insert({
+      fileCreationTime: file.stat.ctime,
+      type: 'page',
+      keyword: stemPhrase(file.basename),
+      originalText: file.basename,
+      replaceText: `[[${file.basename}]]`,
+    });
+
+    this.permutationTokenizer.tokenize(file.basename).forEach((token) => {
+      this.documents.insert({
+        fileCreationTime: file.stat.ctime,
+        type: 'page-token',
+        keyword: token,
+        originalText: file.basename,
+        replaceText: `[[${file.basename}]]`,
+      });
+    });
+
+    this.pluginHelper.getAliases(file).forEach((alias) => {
+      this.documents.insert({
+        fileCreationTime: file.stat.ctime,
+        type: 'alias',
+        keyword: alias.toLowerCase(),
+        originalText: file.basename,
+        replaceText: `[[${file.basename}|${alias}]]`,
+      });
+    });
+
+    this.pluginHelper.getTags(file).forEach((tag) => {
+      this.documents.insert({
+        fileCreationTime: file.stat.ctime,
+        type: 'tag',
+        keyword: tag.replace(/#/, '').toLowerCase(),
+        originalText: tag,
+        replaceText: tag,
+      });
+    });
   }
 }

@@ -2,7 +2,7 @@ import path from 'path';
 import pack from './package.json';
 import CopyPlugin from 'copy-webpack-plugin';
 import TerserPlugin from 'terser-webpack-plugin';
-import { Configuration, DefinePlugin } from 'webpack';
+import { type Configuration, DefinePlugin } from 'webpack';
 
 const isProduction = process.env.NODE_ENV === 'production';
 
@@ -62,16 +62,17 @@ const config: Configuration = {
   ],
   resolve: {
     alias: {
-      svelte: path.resolve('node_modules', 'svelte'),
       '~': path.resolve(__dirname, 'src'),
     },
-    extensions: ['.ts', '.tsx', '.js', '.svelte'],
-    mainFields: ['svelte', 'browser', 'module', 'main'],
+    extensions: ['.ts', '.tsx', '.js'],
+    mainFields: ['browser', 'module', 'main'],
   },
   externals: {
     obsidian: 'commonjs2 obsidian',
     '@codemirror/view': 'commonjs2 @codemirror/view',
+    '@codemirror/state': 'commonjs2 @codemirror/state',
     '@codemirror/rangeset': 'commonjs2 @codemirror/rangeset',
+    'webworker-threads': 'require(webworker-threads)',
   },
 };
 

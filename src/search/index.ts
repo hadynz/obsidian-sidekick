@@ -1,73 +1,72 @@
-import lunr from 'lunr';
+import _ from 'lodash';
+import { Trie } from '@tanishiking/aho-corasick';
 
-import { Indexer, Index } from '../indexing/indexer';
+import type { Indexer } from '../indexing/indexer';
+import { redactText } from './redactText';
+import { mapStemToOriginalText } from './mapStemToOriginalText';
+import { WordPunctStemTokenizer } from '../tokenizers';
 
-type SearchResult = {
+const tokenizer = new WordPunctStemTokenizer();
+
+export type SearchResult = {
   start: number;
   end: number;
-  replaceText: string;
+  indexKeyword: string;
+  originalKeyword: string;
 };
 
-// Any arbitrary key to use for the search index
-const DocumentKey = 'text';
+const isEqual = (a: SearchResult, b: SearchResult) => {
+  return a.start === b.start && a.indexKeyword === b.indexKeyword;
+};
 
 export default class Search {
-  constructor(private indexer: Indexer) {}
+  private trie: Trie;
 
+  constructor(private indexer: Indexer) {
+    const keywords = this.indexer.getKeywords();
+
+    // Generating the Trie is expensive, so we only do it once
+    this.trie = new Trie(keywords, {
+      allowOverlaps: false,
+      onlyWholeWords: true,
+      caseInsensitive: true,
+    });
+  }
+
+  public getReplacementSuggestions(keyword: string): string[] {
+    const keywords = this.indexer.getDocumentsByKeyword(keyword).map((doc) => doc.replaceText);
+    return _.uniq(keywords);
+  }
 
   public find(text: string): SearchResult[] {
-    // Redact text that we don't want to be searched
-    const redactedText = this.redactText(text);
+    const redactedText = redactText(text); // Redact text that we don't want to be searched
 
-    const idx = lunr(function () {
-      this.metadataWhitelist = ['position'];
-      this.ref(DocumentKey);
-      this.field(DocumentKey);
-      this.add({ [DocumentKey]: redactedText });
-    });
+    // Stem the text
+    const tokens = tokenizer.tokenize(redactedText);
+    const stemmedText = tokens.map((t) => t.stem).join('');
 
-    const indices = this.indexer.getIndices();
+    // Search stemmed text
+    const emits = this.trie.parseText(stemmedText);
 
-    const results = idx.query(function () {
-      Object.keys(indices).map((index) => {
-        this.term(index, {});
-      });
-    });
-
-    return this.toSearchResults(results, indices);
+    // Map stemmed results to original text
+    return _.chain(emits)
+      .map((emit) => mapStemToOriginalText(emit, tokens))
+      .uniqWith(isEqual)
+      .filter((result) => this.keywordExistsInIndex(result.indexKeyword))
+      .sort((a, b) => a.start - b.start) // Must sort by start position to prepare for highlighting
+      .value();
   }
 
-  private toSearchResults(results: lunr.Index.Result[], indices: Index): SearchResult[] {
-    if (results.length === 0) {
-      return [];
+  private keywordExistsInIndex(index: string): boolean {
+    const exists = this.indexer.getDocumentsByKeyword(index).length > 0;
+
+    if (!exists) {
+      console.warn(
+        `Search hit "${index}" was not found in Obsidian index. This could be a bug. Report on https://github.com/hadynz/obsidian-sidekick/issues`,
+        this.indexer
+      );
     }
 
-    // We will always ever only have one result as we only index one document
-    const indexHits = results[0].matchData.metadata;
-
-    return Object.keys(indexHits)
-      .reduce((acc: SearchResult[], indexHit: string) => {
-        const positions = indexHits[indexHit][DocumentKey].position;
-
-        const searchResults = positions.map(
-          (position): SearchResult => ({
-            start: position[0],
-            end: position[0] + position[1],
-            replaceText: indices[indexHit].replaceText,
-          })
-        );
-
-        acc.push(...searchResults);
-        return acc;
-      }, [])
-      .sort((a, b) => a.start - b.start); // Must sort by start position to prepare for highlighting
-  }
-
-  private redactText(text: string): string {
-    return text
-      .replace(/```[\s\S]+?```/g, (m) => ' '.repeat(m.length)) // remove code blocks
-      .replace(/^\n*?---[\s\S]+?---/g, (m) => ' '.repeat(m.length)) // remove yaml front matter
-      .replace(/#+([a-zA-Z0-9_]+)/g, (m) => ' '.repeat(m.length)) // remove hashtags
-      .replace(/\[(.*?)\]+/g, (m) => ' '.repeat(m.length)); // remove links
+    return exists;
   }
 }

@@ -1,32 +1,32 @@
 import {
   Decoration,
-  DecorationSet,
   EditorView,
   ViewPlugin,
   ViewUpdate,
-  PluginValue,
+  type DecorationSet,
+  type PluginValue,
 } from '@codemirror/view';
 import { RangeSetBuilder } from '@codemirror/rangeset';
-import { debounce, Debouncer } from 'obsidian';
+import { App, debounce, type Debouncer } from 'obsidian';
 
-import Search from '../search';
-import { SuggestionsPopup } from '../components/suggestionsPopup';
+import { showSuggestionsModal } from '../components/suggestionsPopup';
+import type Search from '../search';
 
 import './suggestionsExtension.css';
 
 const SuggestionCandidateClass = 'cm-suggestion-candidate';
 
-const underlineDecoration = (start: number, end: number, replaceText: string) =>
+const underlineDecoration = (start: number, end: number, indexKeyword: string) =>
   Decoration.mark({
     class: SuggestionCandidateClass,
     attributes: {
-      'data-replace-text': replaceText,
+      'data-index-keyword': indexKeyword,
       'data-position-start': `${start}`,
       'data-position-end': `${end}`,
     },
   });
 
-export const suggestionsExtension = (search: Search): ViewPlugin<PluginValue> => {
+export const suggestionsExtension = (search: Search, app: App): ViewPlugin<PluginValue> => {
   return ViewPlugin.fromClass(
     class {
       decorations: DecorationSet;
@@ -68,7 +68,7 @@ export const suggestionsExtension = (search: Search): ViewPlugin<PluginValue> =>
             const end = from + result.end;
 
             // Add the decoration
-            builder.add(start, end, underlineDecoration(start, end, result.replaceText));
+            builder.add(start, end, underlineDecoration(start, end, result.indexKeyword));
           }
         }
 
@@ -83,22 +83,20 @@ export const suggestionsExtension = (search: Search): ViewPlugin<PluginValue> =>
           const target = e.target as HTMLElement;
           const isCandidate = target.classList.contains(SuggestionCandidateClass);
 
-          if (!isCandidate) {
+          // Do nothing if user right-clicked or unrelated DOM element was clicked
+          if (!isCandidate || e.button !== 0) {
             return;
           }
 
-          // Extract position and search index word from target element data attributes state
-          const { positionStart, positionEnd, replaceText } = target.dataset;
+          // Extract position and replacement text from target element data attributes state
+          const { positionStart, positionEnd, indexKeyword } = target.dataset;
 
-          if (!replaceText) {
-            return;
-          }
-
-          const popup = new SuggestionsPopup();
-          popup.show({
-            target,
-            text: replaceText,
-            onClick: () => {
+          // Show suggestions modal
+          showSuggestionsModal({
+            app,
+            mouseEvent: e,
+            suggestions: search.getReplacementSuggestions(indexKeyword),
+            onClick: (replaceText) => {
               view.dispatch({
                 changes: {
                   from: +positionStart,

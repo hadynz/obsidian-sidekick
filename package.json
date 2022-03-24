@@ -1,6 +1,6 @@
 {
   "name": "obsidian-sidekick",
-  "version": "1.1.0",
+  "version": "1.5.1",
   "description": "A companion to identify hidden connections that match your tags and pages",
   "main": "src/index.ts",
   "repository": {
@@ -23,7 +23,7 @@
     "prettier": "prettier --write '**/*.{ts,js,css,html}'",
     "lint": "tsc --noemit && eslint . --ext .ts",
     "clean": "rimraf dist main.js*",
-    "test": "jest --passWithNoTests",
+    "test": "jest --passWithNoTests --verbose",
     "test-watch": "jest --watch",
     "dev": "NODE_ENV=development webpack && cp ./dist/main.js* .",
     "build": "NODE_ENV=production webpack",
@@ -31,11 +31,12 @@
   },
   "devDependencies": {
     "@codemirror/rangeset": "^0.19.7",
+    "@codemirror/state": "^0.19.9",
     "@codemirror/view": "^0.19.42",
     "@types/faker": "^5.5.8",
     "@types/jest": "^26.0.22",
     "@types/lodash": "^4.14.178",
-    "@types/lunr": "^2.3.4",
+    "@types/lokijs": "^1.5.7",
     "@types/webpack": "^5.28.0",
     "@typescript-eslint/eslint-plugin": "^4.22.0",
     "@typescript-eslint/parser": "^4.22.0",
@@ -50,7 +51,6 @@
     "lint-staged": "^11.2.4",
     "obsidian": "^0.13.11",
     "prettier": "^2.2.1",
-    "prettier-plugin-svelte": "^2.2.0",
     "rimraf": "^3.0.2",
     "style-loader": "^3.3.1",
     "terser-webpack-plugin": "^5.2.5",
@@ -69,8 +69,11 @@
     "*.{js,css,md}": "prettier --write"
   },
   "dependencies": {
+    "@tanishiking/aho-corasick": "^0.0.1",
+    "@types/natural": "^5.1.0",
     "lodash": "^4.17.21",
-    "lunr": "^2.3.9",
-    "tippy.js": "^6.3.7"
+    "lokijs": "^1.5.12",
+    "natural": "^5.1.13",
+    "tiny-typed-emitter": "^2.1.0"
   }
 }
