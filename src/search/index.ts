@@ -51,6 +51,7 @@ export default class Search {
     // Map stemmed results to original text
     return _.chain(emits)
       .map((emit) => mapStemToOriginalText(emit, tokens))
+      .filter((r) => r !== null)
       .uniqWith(isEqual)
       .filter((result) => this.keywordExistsInIndex(result.indexKeyword))
       .sort((a, b) => a.start - b.start) // Must sort by start position to prepare for highlighting

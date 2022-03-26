@@ -11,10 +11,15 @@ import { Token } from '../tokenizers';
  * @param tokens
  * @returns
  */
-export const mapStemToOriginalText = (searchResult: Emit, tokens: Token[]): SearchResult => {
+export const mapStemToOriginalText = (searchResult: Emit, tokens: Token[]): SearchResult | null => {
   const matchingTokens = tokens.filter(
     (token) => token.stemStart >= searchResult.start && token.stemEnd <= searchResult.end + 1
   );
+
+  if (matchingTokens.length === 0) {
+    // Examples where this is possible: an external url contains a key
+    return null;
+  }
 
   return {
     start: matchingTokens[0].originalStart,
