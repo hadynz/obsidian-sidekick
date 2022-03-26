@@ -4,9 +4,8 @@ import { Trie } from '@tanishiking/aho-corasick';
 import type { Indexer } from '../indexing/indexer';
 import { redactText } from './redactText';
 import { mapStemToOriginalText } from './mapStemToOriginalText';
-import { WordPunctStemTokenizer } from '../tokenizers';
-
-const tokenizer = new WordPunctStemTokenizer();
+import {SidekickTokenizer, WordPunctStemTokenizer, WordPunctTokenizer} from '../tokenizers';
+import {SidekickSettings} from "~/settings/sidekickSettings";
 
 export type SearchResult = {
   start: number;
@@ -21,8 +20,9 @@ const isEqual = (a: SearchResult, b: SearchResult) => {
 
 export default class Search {
   private trie: Trie;
+  private tokenizer: SidekickTokenizer;
 
-  constructor(private indexer: Indexer) {
+  constructor(private indexer: Indexer, private settings: SidekickSettings) {
     const keywords = this.indexer.getKeywords();
 
     // Generating the Trie is expensive, so we only do it once
@@ -31,6 +31,12 @@ export default class Search {
       onlyWholeWords: true,
       caseInsensitive: true,
     });
+    if (settings.enableStemming) {
+      this.tokenizer = new WordPunctStemTokenizer()
+    }
+    else {
+      this.tokenizer = new WordPunctTokenizer();
+    }
   }
 
   public getReplacementSuggestions(keyword: string): string[] {
@@ -40,13 +46,13 @@ export default class Search {
 
   public find(text: string): SearchResult[] {
     const redactedText = redactText(text); // Redact text that we don't want to be searched
+    const tokens = this.tokenizer.tokenize(redactedText);
 
     // Stem the text
-    const tokens = tokenizer.tokenize(redactedText);
-    const stemmedText = tokens.map((t) => t.stem).join('');
+    const searchText = tokens.map((t) => t.stem).join('');
 
-    // Search stemmed text
-    const emits = this.trie.parseText(stemmedText);
+    // Search (stemmed) text
+    const emits = this.trie.parseText(searchText);
 
     // Map stemmed results to original text
     return _.chain(emits)

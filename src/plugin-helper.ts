@@ -1,10 +1,12 @@
 import _ from 'lodash';
-import { parseFrontMatterTags, TFile, Plugin } from 'obsidian';
+import { parseFrontMatterTags, TFile} from 'obsidian';
 
 import { getAliases } from './utils/getAliases';
+import {SidekickSettings} from "~/settings/sidekickSettings";
+import TagsAutosuggestPlugin from "~/index";
 
 export class PluginHelper {
-  constructor(private plugin: Plugin) {}
+  constructor(private plugin: TagsAutosuggestPlugin) {}
 
   public get activeFile(): TFile | undefined {
     return this.plugin.app.workspace.getActiveFile();
@@ -51,5 +53,9 @@ export class PluginHelper {
     return (
       parseFrontMatterTags(this.plugin.app.metadataCache.getFileCache(file)?.frontmatter) ?? []
     );
+  }
+
+  public getSettings(): SidekickSettings {
+    return this.plugin.settings;
   }
 }

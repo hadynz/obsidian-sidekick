@@ -52,11 +52,44 @@ export class WordPermutationsTokenizer {
   }
 }
 
-export class WordPunctStemTokenizer {
-  private pattern = /([\s]+|[A-zÀ-ÿ-]+|[0-9._]+|.|!|\?|'|"|:|;|,|-)/i;
+export interface SidekickTokenizer {
+  tokenize(text: string): Token[];
+}
+
+const pattern = /([\s]+|[A-zÀ-ÿ-]+|[0-9._]+|.|!|\?|'|"|:|;|,|-)/i;
+
+export class WordPunctTokenizer implements SidekickTokenizer {
 
   public tokenize(text: string): Token[] {
-    const tokens = text.split(this.pattern);
+    const tokens = text.split(pattern);
+    return _.chain(tokens).without('').transform(this.stringToTokenAccumulator()).value();
+  }
+
+  private stringToTokenAccumulator() {
+    let originalCharIndex = 0;
+
+    return (acc: Token[], token: string, index: number) => {
+
+      acc.push({
+        index,
+        originalText: token,
+        originalStart: originalCharIndex,
+        originalEnd: originalCharIndex + token.length,
+        stem: token,
+        stemStart: originalCharIndex,
+        stemEnd: originalCharIndex + token.length,
+      });
+
+      originalCharIndex += token.length;
+
+      return acc;
+    };
+  }
+}
+
+export class WordPunctStemTokenizer implements SidekickTokenizer {
+  public tokenize(text: string): Token[] {
+    const tokens = text.split(pattern);
     return _.chain(tokens).without('').transform(this.stringToTokenAccumulator()).value();
   }
 

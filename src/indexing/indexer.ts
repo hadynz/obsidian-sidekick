@@ -23,6 +23,7 @@ interface IndexerEvents {
 export class Indexer extends TypedEmitter<IndexerEvents> {
   private documents: Collection<Document>;
   private permutationTokenizer: WordPermutationsTokenizer;
+  private shouldStem: boolean;
 
   constructor(private pluginHelper: PluginHelper) {
     super();
@@ -34,6 +35,7 @@ export class Indexer extends TypedEmitter<IndexerEvents> {
     });
 
     this.permutationTokenizer = new WordPermutationsTokenizer();
+    this.shouldStem = pluginHelper.getSettings().enableStemming;
   }
 
   public getKeywords(): string[] {
@@ -72,20 +74,23 @@ export class Indexer extends TypedEmitter<IndexerEvents> {
     this.documents.insert({
       fileCreationTime: file.stat.ctime,
       type: 'page',
-      keyword: stemPhrase(file.basename),
+      // TODO Emile: not sure if should toLowerCase() here.
+      keyword: this.shouldStem ? stemPhrase(file.basename) : file.basename.toLowerCase(),
       originalText: file.basename,
       replaceText: `[[${file.basename}]]`,
     });
 
-    this.permutationTokenizer.tokenize(file.basename).forEach((token) => {
-      this.documents.insert({
-        fileCreationTime: file.stat.ctime,
-        type: 'page-token',
-        keyword: token,
-        originalText: file.basename,
-        replaceText: `[[${file.basename}]]`,
+    if (this.shouldStem) {
+      this.permutationTokenizer.tokenize(file.basename).forEach((token) => {
+        this.documents.insert({
+          fileCreationTime: file.stat.ctime,
+          type: 'page-token',
+          keyword: token,
+          originalText: file.basename,
+          replaceText: `[[${file.basename}]]`,
+        });
       });
-    });
+    }
 
     this.pluginHelper.getAliases(file).forEach((alias) => {
       this.documents.insert({
@@ -97,6 +102,7 @@ export class Indexer extends TypedEmitter<IndexerEvents> {
       });
     });
 
+    // TODO: This can probably be done more efficiently by iterating getAllTags.
     this.pluginHelper.getTags(file).forEach((tag) => {
       this.documents.insert({
         fileCreationTime: file.stat.ctime,
