@@ -10,7 +10,7 @@ import {SidekickSettings} from "~/settings/sidekickSettings";
 
 type Document = {
   fileCreationTime: number;
-  type: 'tag' | 'alias' | 'page' | 'page-token';
+  type: 'tag' | 'alias' | 'page' | 'page-token' | 'unresolved';
   keyword: string;
   originalText: string;
   replaceText: string;
@@ -145,6 +145,21 @@ export class Indexer extends TypedEmitter<IndexerEvents> {
           });
         }
       });
+    }
+
+    if (this.settings.matchUnresolved) {
+      this.pluginHelper.getUnresolvedLinks(file).forEach((link) => {
+        const keyword = link.toLowerCase();
+        if (!this.keywordsFilter.has(keyword)) {
+          this.documents.insert( {
+            fileCreationTime: file.stat.ctime,
+            type: 'unresolved',
+            keyword,
+            originalText: link,
+            replaceText: `[[${link}]]`
+          });
+        }
+      })
     }
   }
 }

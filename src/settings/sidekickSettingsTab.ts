@@ -39,6 +39,17 @@ export default class SicekickSettingsTab extends PluginSettingTab {
       });
 
     new Setting(containerEl)
+      .setName('Match unresolved links')
+      .setDesc('If true, this will also match unresolved links.')
+      .addToggle(toggle => {
+        toggle.setValue(this.plugin.settings.matchUnresolved)
+        toggle.onChange(async value => {
+          this.plugin.settings.matchUnresolved = value;
+          await this.plugin.saveSettings();
+        });
+      });
+
+    new Setting(containerEl)
       .setName('Keywords filter')
       .setDesc('Add keywords here that will never be matched. These should be comma separated.')
       .addTextArea((text) => {text

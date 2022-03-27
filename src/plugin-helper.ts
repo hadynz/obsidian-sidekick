@@ -27,6 +27,12 @@ export class PluginHelper {
     return this.plugin.app.vault.getMarkdownFiles();
   }
 
+  public getUnresolvedLinks(file: TFile): string[] {
+    const unresolvedLinksDict = this.plugin.app.metadataCache.unresolvedLinks;
+    const record = unresolvedLinksDict[file.path];
+    return Object.keys(record);
+  }
+
   public onLayoutReady(callback: () => void): void {
     this.plugin.app.workspace.onLayoutReady(() => callback());
   }
