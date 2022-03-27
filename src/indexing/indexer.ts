@@ -6,6 +6,7 @@ import type { TFile } from 'obsidian';
 import { stemPhrase } from '../stemmers';
 import { WordPermutationsTokenizer } from '../tokenizers';
 import type { PluginHelper } from '../plugin-helper';
+import {SidekickSettings} from "~/settings/sidekickSettings";
 
 type Document = {
   fileCreationTime: number;
@@ -21,21 +22,29 @@ interface IndexerEvents {
 }
 
 export class Indexer extends TypedEmitter<IndexerEvents> {
+  private db: lokijs;
   private documents: Collection<Document>;
   private permutationTokenizer: WordPermutationsTokenizer;
-  private shouldStem: boolean;
+  private settings: SidekickSettings;
+  private keywordsFilter: Set<string>;
+
 
   constructor(private pluginHelper: PluginHelper) {
     super();
 
-    const db = new lokijs('sidekick');
+    this.db = new lokijs('sidekick');
 
-    this.documents = db.addCollection<Document>('documents', {
-      indices: ['fileCreationTime', 'keyword'],
-    });
+    this.createCollection();
 
     this.permutationTokenizer = new WordPermutationsTokenizer();
-    this.shouldStem = pluginHelper.getSettings().enableStemming;
+    this.settings = pluginHelper.getSettings();
+
+  }
+
+  private createCollection() {
+    this.documents = this.db.addCollection<Document>('documents', {
+      indices: ['fileCreationTime', 'keyword'],
+    });
   }
 
   public getKeywords(): string[] {
@@ -55,7 +64,16 @@ export class Indexer extends TypedEmitter<IndexerEvents> {
     });
   }
 
-  public buildIndex(): void {
+  public buildIndex(rebuild=false): void {
+    this.keywordsFilter = new Set(this.settings.keywordsFilter
+      .replace(/\s/g,'')
+      .split(",")
+      .map(s => s.trim()));
+    if (rebuild) {
+      this.db.removeCollection("documents");
+      this.createCollection();
+      this.documents.removeWhere(() => true);
+    }
     this.pluginHelper.getAllFiles().forEach((file) => this.indexFile(file));
     this.emit('indexRebuilt');
   }
@@ -71,46 +89,62 @@ export class Indexer extends TypedEmitter<IndexerEvents> {
   }
 
   private indexFile(file: TFile): void {
-    this.documents.insert({
-      fileCreationTime: file.stat.ctime,
-      type: 'page',
-      // TODO Emile: not sure if should toLowerCase() here.
-      keyword: this.shouldStem ? stemPhrase(file.basename) : file.basename.toLowerCase(),
-      originalText: file.basename,
-      replaceText: `[[${file.basename}]]`,
-    });
+    // TODO Emile: not sure if should toLowerCase() here.
+    const baseNameKeyword = this.settings.enableStemming ? stemPhrase(file.basename) : file.basename.toLowerCase();
+    // Emile: Keywords filter is applied at every insertion, which is a bit of a code smell.
+    //  however, it cannot quickly be done in a post-processing step because that'd need a full iteration
+    //  on every call of replaceFileIndices()
+    if (!this.keywordsFilter.has(baseNameKeyword)) {
+      this.documents.insert({
+        fileCreationTime: file.stat.ctime,
+        type: 'page',
+        keyword: baseNameKeyword,
+        originalText: file.basename,
+        replaceText: `[[${file.basename}]]`,
+      });
+    }
 
-    if (this.shouldStem) {
-      this.permutationTokenizer.tokenize(file.basename).forEach((token) => {
-        this.documents.insert({
-          fileCreationTime: file.stat.ctime,
-          type: 'page-token',
-          keyword: token,
-          originalText: file.basename,
-          replaceText: `[[${file.basename}]]`,
-        });
+    if (this.settings.enableStemming) {
+      this.permutationTokenizer.tokenize(file.basename).forEach((keyword) => {
+        if (!this.keywordsFilter.has(keyword)) {
+          this.documents.insert({
+            fileCreationTime: file.stat.ctime,
+            type: 'page-token',
+            keyword,
+            originalText: file.basename,
+            replaceText: `[[${file.basename}]]`,
+          });
+        }
       });
     }
 
     this.pluginHelper.getAliases(file).forEach((alias) => {
-      this.documents.insert({
-        fileCreationTime: file.stat.ctime,
-        type: 'alias',
-        keyword: alias.toLowerCase(),
-        originalText: file.basename,
-        replaceText: `[[${file.basename}|${alias}]]`,
-      });
+      const keyword = alias.toLowerCase();
+      if (!this.keywordsFilter.has(keyword)) {
+        this.documents.insert({
+          fileCreationTime: file.stat.ctime,
+          type: 'alias',
+          keyword,
+          originalText: file.basename,
+          replaceText: `[[${file.basename}|${alias}]]`,
+        });
+      }
     });
 
-    // TODO: This can probably be done more efficiently by iterating getAllTags.
-    this.pluginHelper.getTags(file).forEach((tag) => {
-      this.documents.insert({
-        fileCreationTime: file.stat.ctime,
-        type: 'tag',
-        keyword: tag.replace(/#/, '').toLowerCase(),
-        originalText: tag,
-        replaceText: tag,
+    if (this.settings.matchTags) {
+      // TODO: This can probably be done more efficiently by iterating getAllTags.
+      this.pluginHelper.getTags(file).forEach((tag) => {
+        const keyword = tag.replace(/#/, '').toLowerCase();
+        if (!this.keywordsFilter.has(keyword)) {
+          this.documents.insert({
+            fileCreationTime: file.stat.ctime,
+            type: 'tag',
+            keyword,
+            originalText: tag,
+            replaceText: tag,
+          });
+        }
       });
-    });
+    }
   }
 }

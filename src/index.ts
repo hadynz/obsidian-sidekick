@@ -1,4 +1,4 @@
-import { Plugin } from 'obsidian';
+import {debounce, Plugin} from 'obsidian';
 import type { Extension } from '@codemirror/state';
 
 import Search from './search';
@@ -11,6 +11,7 @@ import SicekickSettingsTab from "~/settings/sidekickSettingsTab";
 export default class TagsAutosuggestPlugin extends Plugin {
   private editorExtension: Extension[] = [];
   settings: SidekickSettings;
+  private _rebuildIndex: CallableFunction;
 
   public async onload(): Promise<void> {
     console.log('Autosuggest plugin: loading plugin', new Date().toLocaleString());
@@ -39,6 +40,7 @@ export default class TagsAutosuggestPlugin extends Plugin {
 
     // Build search index on startup (very expensive process)
     pluginHelper.onLayoutReady(() => indexer.buildIndex());
+    this._rebuildIndex = debounce(() => indexer.buildIndex(true), 5000, true);
   }
 
   /**
@@ -50,11 +52,18 @@ export default class TagsAutosuggestPlugin extends Plugin {
     this.app.workspace.updateOptions();
   }
 
+  public rebuildIndex() {
+    // This is very expensive, so debounce this
+    this._rebuildIndex();
+  }
+
   public async onunload(): Promise<void> {
     console.log('Autosuggest plugin: unloading plugin', new Date().toLocaleString());
   }
 
   public async saveSettings(): Promise<void> {
     await this.saveData(this.settings);
+    // TODO: There may be instances in the future where saving the settings does not require rebuilding the index.
+    this.rebuildIndex();
   }
 }
